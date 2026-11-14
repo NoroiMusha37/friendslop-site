@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env from example
+        run: cp .env.example .env
+
+      - name: Build image
+        run: docker compose build
+
+      - name: Lint
+        run: docker compose run --rm web ruff check .
+
+      - name: Check formatting
+        run: docker compose run --rm web ruff format --check .
+
+      - name: Check for missing migrations
+        run: docker compose run --rm web python manage.py makemigrations --check --dry-run
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down

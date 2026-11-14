@@ -50,3 +50,25 @@ Because we are too lazy to do manual data entry, the trough integrates with Thir
       workout plans, banish users, and purge the database.
     * 🐖 **User (Slop Consumer):** Read-only access to the trough, with the singular privilege of leaving scathing
       comments on our recipes.
+
+## 🚿 Run Locally
+
+Everything runs in Docker, so you only need Docker installed.
+
+1. Copy the example settings: `cp .env.example .env`
+2. Generate a secret key and put it into `SECRET_KEY` in `.env`, then set your own `POSTGRES_PASSWORD`:
+   ```
+   docker compose run --rm --no-deps web python -c "import secrets; print(secrets.token_urlsafe(50))"
+   ```
+3. Start the database and the server (the API is at http://localhost:8000):
+   ```
+   docker compose up --build
+   ```
+4. Run commands inside the container:
+   ```
+   docker compose exec web bash
+   python manage.py check
+   ruff check .
+   ruff format .
+   ```
+5. Stop everything (database data is kept): `docker compose down`
