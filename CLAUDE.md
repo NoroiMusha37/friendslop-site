@@ -7,6 +7,10 @@ Every time you get new information about this project, or new way of interaction
 library/models/services, or specific instructions from user on how to test/implement new feature,
 add short description of acquired knowledge here in bulleted list:
 - Before starting any step: analyze the plan for that step first, report all inconsistencies, and ask EVERYTHING that needs clarification or the user's decision. Write code only after all of that is resolved. Never silently pick defaults.
+- Add dependencies and settings only in the step that first uses them; no unused packages or settings variables.
+- Settings are read with `pydantic-settings`. Database connection is built from the same `POSTGRES_*` variables Docker Compose uses (no `DATABASE_URL`). `TIME_ZONE = "Europe/Kyiv"`.
+- Everything runs in Docker (Django + PostgreSQL 18) via Docker Compose, including tests.
+- Lists filtering uses `django-filter` (added when the first filtered list appears).
 - Data model rule: don't store anything that can be derived (e.g. "has pairs" = EXISTS on IngredientPair, link kind = URL host) or that nothing uses.
 - Workflow: implement the plan one small step at a time. After each step stop, run checks, propose a one-line commit message and wait for the user's review; move on only when the user says so. Never `git push`.
 - Branches: `main` holds only finished, deployable code (hosting and CI/CD planned). After initial setup, work happens on `dev`; features go in their own branches made from `dev` and merge back into `dev`.

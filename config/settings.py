@@ -12,20 +12,35 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 
+from pydantic_settings import BaseSettings
+
+
+class Env(BaseSettings):
+    """Values read from environment variables (provided by Docker Compose from .env)."""
+
+    SECRET_KEY: str
+    DEBUG: bool = False
+    ALLOWED_HOSTS: list[str] = []
+    POSTGRES_DB: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int = 5432
+
+
+env = Env()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-yi&n7)1i)xp=oeecx4mmt8gdltgts-y%3#rf=qgq(^#ey)3f9$"
+SECRET_KEY = env.SECRET_KEY
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.DEBUG
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.ALLOWED_HOSTS
 
 
 # Application definition
@@ -74,8 +89,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env.POSTGRES_DB,
+        "USER": env.POSTGRES_USER,
+        "PASSWORD": env.POSTGRES_PASSWORD,
+        "HOST": env.POSTGRES_HOST,
+        "PORT": env.POSTGRES_PORT,
     }
 }
 
@@ -104,7 +123,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Kyiv"
 
 USE_I18N = True
 
