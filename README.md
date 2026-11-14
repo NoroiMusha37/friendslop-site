@@ -19,8 +19,8 @@ requires mandatory authentication (no randoms allowed in our slop, strictly no g
 
 **The Core Slop:**
 
-* 🍳 **Culinary Slop (Recipes):** Dump your favorite unhinged recipes here. We rate and review each other's terrible
-  cooking, and everyone else can leave comments.
+* 🍳 **Culinary Slop (Recipes):** Dump your favorite unhinged recipes here. We rate and review the terrible cooking we
+  dump here, and everyone else can leave comments.
 * 🎮 **Digital Slop (Video Games):** Maintain a backlog of games we've played or pretend we're going to play. Each of us
   tracks our own status, rates games and writes scathing reviews.
 * 🏋️ **Sweaty Slop (Workouts):** Describe exercises, paste links to fitness videos that we will probably ignore, and
