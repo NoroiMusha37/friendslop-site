@@ -23,6 +23,11 @@ class UserAdmin(DjangoUserAdmin):
     readonly_fields = ("is_active", "approved_at")
     actions = ["approve_users", "reject_users", "ban_users", "unban_users"]
 
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and obj.is_superuser:
+            return False
+        return super().has_delete_permission(request, obj)
+
     def _apply(self, request, queryset, change, done):
         changed = 0
         for user in queryset:
