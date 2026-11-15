@@ -1,16 +1,22 @@
+from django.db import transaction
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
 from accounts.permissions import IsAdminOrReadOnly
 from common.ratings import with_combined_rating
 from common.views import LinksMixin
 from recipes.filters import RecipeFilter
-from recipes.models import Recipe
+from recipes.models import Recipe, RecipeImage
 from recipes.serializers import (
+    AddImagesSerializer,
     RecipeCreateSerializer,
     RecipeDetailSerializer,
+    RecipeImageSerializer,
     RecipeListSerializer,
     RecipeWriteSerializer,
 )
@@ -65,3 +71,33 @@ class RecipeViewSet(LinksMixin, viewsets.ModelViewSet):
         serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         return self._detail_response(serializer.save(), status.HTTP_200_OK)
+
+    @extend_schema(
+        request={"multipart/form-data": AddImagesSerializer},
+        responses={201: RecipeImageSerializer(many=True)},
+    )
+    @action(detail=True, methods=["post"], url_path="images", parser_classes=[MultiPartParser])
+    def add_images(self, request, pk=None):
+        recipe = self.get_object()
+        serializer = AddImagesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        images = []
+        try:
+            with transaction.atomic():
+                for file in serializer.validated_data["images"]:
+                    image = RecipeImage(recipe=recipe, image=file)
+                    images.append(image)  # tracked before saving, so a half-saved one is cleaned up too
+                    image.save()
+        except Exception:
+            for image in images:
+                image.image.delete(save=False)
+            raise
+        data = RecipeImageSerializer(images, many=True, context=self.get_serializer_context()).data
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses={204: None})
+    @action(detail=True, methods=["delete"], url_path=r"images/(?P<image_id>\d+)")
+    def delete_image(self, request, pk=None, image_id=None):
+        # The file itself is removed by the post_delete handler in recipes/signals.py
+        get_object_or_404(self.get_object().images, pk=image_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

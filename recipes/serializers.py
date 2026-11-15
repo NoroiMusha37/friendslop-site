@@ -9,9 +9,17 @@ from recipes.signals import delete_file_after_commit
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
 
 
-def validate_image_size(image):
-    if image and image.size > MAX_IMAGE_SIZE:
-        raise serializers.ValidationError("Image must be 5 MB or smaller.")
+class UploadedImageField(serializers.ImageField):
+    """An uploaded image of at most 5 MB. HEIC is refused with a clear message: most browsers can't show it."""
+
+    def to_internal_value(self, data):
+        # Checked before DRF's own image check, which would only say "not a valid image"
+        if getattr(data, "name", "").lower().endswith((".heic", ".heif")):
+            raise serializers.ValidationError("HEIC photos aren't supported. Please upload a JPEG or PNG.")
+        image = super().to_internal_value(data)
+        if image.size > MAX_IMAGE_SIZE:
+            raise serializers.ValidationError("Image must be 5 MB or smaller.")
+        return image
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -65,7 +73,7 @@ class RecipeDetailSerializer(RatingsMixin, serializers.ModelSerializer):
 class RecipeWriteSerializer(serializers.ModelSerializer):
     # Declared explicitly: DRF makes many-to-many fields with a custom link table read-only
     ingredients = serializers.PrimaryKeyRelatedField(many=True, queryset=Ingredient.objects.all(), allow_empty=False)
-    cover_image = serializers.ImageField(required=False, allow_null=True, validators=[validate_image_size])
+    cover_image = UploadedImageField(required=False, allow_null=True)
 
     class Meta:
         model = Recipe
@@ -105,3 +113,9 @@ class RecipeCreateSerializer(RecipeWriteSerializer):
             recipe.ingredients.set(ingredients)
             save_links(recipe, links)
         return recipe
+
+
+class AddImagesSerializer(serializers.Serializer):
+    """Body of `POST /recipes/{id}/images/`: one or more files under `images`."""
+
+    images = serializers.ListField(child=UploadedImageField(), allow_empty=False)

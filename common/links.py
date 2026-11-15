@@ -4,7 +4,6 @@ from datetime import timedelta
 
 from rest_framework import serializers
 
-from common.schemas import YouTubeVideo
 from common.youtube import YouTubeUnavailable, extract_video_id, fetch_videos, is_youtube
 
 
