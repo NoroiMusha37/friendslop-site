@@ -69,6 +69,7 @@ Everything runs in Docker, so you only need Docker installed.
    docker compose exec web bash
    python manage.py migrate
    python manage.py createsuperuser
+   pytest
    ruff check .
    ruff format .
    ```

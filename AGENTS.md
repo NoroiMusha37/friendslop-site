@@ -87,6 +87,7 @@ No child AGENTS.md files yet. Root owns the whole repo:
 - `.env.example`: settings template; real `.env` is git-ignored
 - `.github/workflows/ci.yml`: CI on push/PR to `dev` and `main`, runs checks inside the Docker image (ruff is run manually, not in CI)
 - `accounts/`: custom `User` model (admin = `is_superuser`, pending = `approved_at` is null), its Django admin page, auth endpoints (`/api/v1/auth/...`), user management (`/api/v1/users/`, rules in `services.py`) and the `IsAdmin` permission
+- `conftest.py`: shared pytest fixtures (users in each status, API clients); tests live in `<app>/tests/test_*.py`
 - `config/urls.py` also serves the admin-only API docs at `/api/docs/` (schema at `/api/schema/`)
 - `docs/adr.md`: domain model, roles and randomizer rules; has priority over `README.md`
 - `README.md`: project description for the course

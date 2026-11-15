@@ -21,6 +21,9 @@ jobs:
       - name: Check for missing migrations
         run: docker compose run --rm web python manage.py makemigrations --check --dry-run
 
+      - name: Run tests
+        run: docker compose run --rm web pytest
+
       - name: Stop containers
         if: always()
         run: docker compose down
