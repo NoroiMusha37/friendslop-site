@@ -19,3 +19,9 @@ class User(AbstractUser):
     approved_at = models.DateTimeField(null=True, blank=True)
 
     objects = UserManager()
+
+    @property
+    def status(self):
+        if self.approved_at is None:
+            return "pending"
+        return "active" if self.is_active else "banned"

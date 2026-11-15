@@ -39,6 +39,14 @@ class LoginSerializer(TokenObtainPairSerializer):
         return super().validate(attrs)
 
 
+class UserSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "status", "date_joined")
+
+
 class MeSerializer(serializers.ModelSerializer):
     is_admin = serializers.BooleanField(source="is_superuser", read_only=True)
 
