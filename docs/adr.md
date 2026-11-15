@@ -8,18 +8,20 @@
 ## Common
 
 - rating: integer 0-10, personal for each admin
-- review: rating + text, personal for each admin. Same for recipes, games and exercises
-- links (youtube, reels, threads, tiktok): only YouTube links get metadata from YouTube API (title, duration,
-  thumbnail), others are stored as plain links. A wrong YouTube link shows a message on that link; YouTube being down
-  must not block saving
+- review: rating + optional text, personal for each admin. Same for recipes, games and exercises
+- links: any site; only YouTube links get metadata from YouTube API (title, duration, thumbnail). A broken YouTube
+  link rejects the request (nothing saved); YouTube being down must not block saving, the info is filled in later by
+  a daily command. Several links can be added at once and removed one by one
 
 ## Recipes
 
+- title
 - instructions (full recipe text, including ingredient amounts)
 - cooking_method (BAKED, FRIED, etc.), one per recipe
 - links
-- ingredients (no amounts, those are in instructions)
-- image
+- ingredients (no amounts, those are in instructions); an ingredient used in a recipe can't be deleted
+- cover image: own optional field, replaced by uploading a new one
+- gallery images: several, added at once and removed one by one
 - review
 - comments: from users only, no editing; author deletes own, admins delete any
 
