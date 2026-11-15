@@ -87,8 +87,9 @@ No child AGENTS.md files yet. Root owns the whole repo:
 - `.env.example`: settings template; real `.env` is git-ignored
 - `.github/workflows/ci.yml`: CI on push/PR to `dev` and `main`, runs checks inside the Docker image (ruff is run manually, not in CI)
 - `accounts/`: custom `User` model (admin = `is_superuser`, pending = `approved_at` is null), its Django admin page, auth endpoints (`/api/v1/auth/...`), user management (`/api/v1/users/`, rules in `services.py`) and the `IsAdmin` permission
-- `common/`: abstract `BaseLink` and `BaseReview` models shared by recipes and (later) exercises
-- `recipes/`: recipes, ingredients, cover/gallery images, links, reviews, comments, and their Django admin pages
+- `common/`: code shared by recipes, games and exercises: abstract `BaseLink`/`BaseReview` models, their base serializers, ratings (`ratings.py`: combined rating + sort by rating; `serializers.RatingsMixin`; `filters.RatingOrderingFilter`). Works with any model that has `reviews`/`links`
+- `recipes/`: recipes, ingredients, cover/gallery images, links, reviews, comments, their Django admin pages, and the recipes API (`/api/v1/recipes/`: filters, search, rating sort in `filters.py`; file deletion in `signals.py`)
+- `media/` (git-ignored): uploaded files, served by Django only when `DEBUG` is on
 - `conftest.py`: shared pytest fixtures (users in each status, API clients); tests live in `<app>/tests/test_*.py`
 - `config/urls.py` also serves the admin-only API docs at `/api/docs/` (schema at `/api/schema/`)
 - `docs/adr.md`: domain model, roles and randomizer rules; has priority over `README.md`

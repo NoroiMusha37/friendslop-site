@@ -7,7 +7,8 @@
 
 ## Common
 
-- rating: integer 0-10, personal for each admin
+- rating: integer 0-10, personal for each admin. Shown per admin (by username) plus a combined rating = average of
+  the given ratings; lists can be sorted by any admin's rating or the combined one (unrated last). Visible to everyone
 - review: rating + optional text, personal for each admin. Same for recipes, games and exercises
 - links: any site; only YouTube links get metadata from YouTube API (title, duration, thumbnail). A broken YouTube
   link rejects the request (nothing saved); YouTube being down must not block saving, the info is filled in later by
