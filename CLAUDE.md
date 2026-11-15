@@ -24,7 +24,8 @@ add short description of acquired knowledge here in bulleted list:
 - Auth: superusers can't be banned via the API; a pending or banned user who logs in with the correct password gets a clear "waiting for approval" / "banned" error; sign-up validates `password2` on the backend; Swagger docs are admin-only; sign-up and login are rate-limited.
 - Data model rule: don't store anything that can be derived (e.g. "has pairs" = EXISTS on IngredientPair, link kind = URL host) or that nothing uses.
 - Workflow: implement the plan one small step at a time. After each step stop, run checks, propose a one-line commit message and wait for the user's review; move on only when the user says so. Never `git push`.
-- Branches: `main` holds only finished, deployable code (hosting and CI/CD planned). After initial setup, work happens on `dev`; features go in their own branches made from `dev` and merge back into `dev`.
+- Branches: `main` holds only finished, deployable code (hosting and CI/CD planned). After initial setup, work happens on `dev`; features go in their own branches made from `dev` and merge back into `dev`. Small fixes to code already in `dev` are committed directly on `dev` (no branch), then `dev` is merged into the open feature branch.
+- Superusers can't be deleted from the Django admin panel (Delete button and "Delete selected" action); regular users can.
 - After work is done in worktrees - merge worktree branch locally (`git merge`) into the branch it was made from (`dev` after setup, never straight into `main`); do NOT push worktree branches to remote; Delete worktree after successful merge;
 - If needed DTO model - create pydantic schema in separate schemas.py file related to working module
 - Never add anything to `__init__.py`. Use full-path imports.
