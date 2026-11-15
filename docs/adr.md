@@ -1,40 +1,85 @@
 ## Roles
 
-- ADMIN: both team members, full access to everything
+- ADMIN: both team members (Django superusers, created by hand), full access to everything
 - USER: can view everything and leave comments on recipes. Signs up with username, email and own password; account
   stays inactive until an admin approves it
 - randomizers are admin-only
+- user statuses: pending (not approved yet), active, banned. Rejecting a sign-up deletes the account. Admins can't be
+  banned or deleted (neither through the API nor in the Django admin panel)
+
+## Auth
+
+- JWT: access token 15 min, refresh token 7 days; each refresh gives a new refresh token and the old one stops
+  working; logout invalidates the refresh token. Banning blocks a user's existing tokens immediately
+- endpoints: `/api/v1/auth/register/`, `login/`, `refresh/`, `logout/`, `me/`
+- sign-up checks the password confirmation and Django's password rules
+- a pending or banned user who logs in with the correct password gets a clear "waiting for approval" / "banned"
+  message; a wrong password gets a generic error
+- rate limits per IP: login 5/min, sign-up 5/hour
+- user management (admins): `/api/v1/users/` lists regular users (admins hidden), `?status=pending|active|banned`,
+  actions approve / reject / ban / unban, each allowed only in the matching status. Same actions in the Django admin
+  panel
+- API docs (Swagger) at `/api/docs/`, admins only (log in at `/admin/` first)
 
 ## Common
 
 - rating: integer 0-10, personal for each admin. Shown per admin (by username) plus a combined rating = average of
   the given ratings; lists can be sorted by any admin's rating or the combined one (unrated last). Visible to everyone
-- review: rating + optional text, personal for each admin. Same for recipes, games and exercises
-- links: any site; only YouTube links get metadata from YouTube API (title, duration, thumbnail). A broken YouTube
-  link rejects the request (nothing saved); YouTube being down must not block saving, the info is filled in later by
-  a daily command. Several links can be added at once and removed one by one
+- review: rating + optional text, personal for each admin. Same for recipes, games and exercises. An admin creates
+  their review with `POST .../{id}/review/`, edits it with `PATCH`, removes it with `DELETE`
+- links: any site; only YouTube links get metadata from YouTube API (title, duration, `high` thumbnail), fetched for
+  all links of a request in one call
+    - `POST .../{id}/links/` with `{"links": [...]}` adds several at once and returns the new links;
+      `DELETE .../{id}/links/{link_id}/` removes one
+    - a broken YouTube link (no video id, video not found) rejects the whole request, nothing saved; errors point to the
+      link's position: `{"links": {"1": ["YouTube video not found."]}}`
+    - a link already added, or repeated in the request, is saved once without an error
+    - YouTube down (timeout, server error, quota used up): saved without info, filled in later by a daily command.
+      Invalid or forbidden API key: error 503, nothing saved
 
 ## Recipes
 
 - title
 - instructions (full recipe text, including ingredient amounts)
-- cooking_method (BAKED, FRIED, etc.), one per recipe
+- cooking_method, one per recipe: BAKED, FRIED, BOILED, STEWED, GRILLED, STEAMED, RAW, OTHER
 - links
-- ingredients (no amounts, those are in instructions); an ingredient used in a recipe can't be deleted
+- ingredients (no amounts, those are in instructions); at least one per recipe; an ingredient used in a recipe can't
+  be deleted
 - cover image: own optional field, replaced by uploading a new one
-- gallery images: several, added at once and removed one by one
+- gallery images: several, added at once and removed one by one, no limit on count
 - review
-- comments: from users only, no editing; author deletes own, admins delete any
+- comments: from users only, no editing; author deletes own, admins delete any; newest first; length limit
+  1,000-2,000 characters (exact number to confirm)
+
+### Recipes API
+
+- `POST /recipes/` (form data or JSON): title, instructions, cooking method, ingredient IDs, optional cover, optional
+  list of links. A broken link means the recipe isn't created
+- `PATCH /recipes/{id}/` edits the same fields except links; uploading a cover replaces the old one, an empty value
+  removes it. No PUT
+- list: id, title, cooking method, cover, ratings per admin, combined rating. Newest first by default;
+  `?ordering=combined_rating` or `rating:<admin username>` (`-` for highest first); `?search=` looks in title and
+  instructions, title matches first; filters `?cooking_method=`, `?ingredient=<id>`
+- detail adds instructions, ingredients, gallery images, links, reviews, comment count
+- images (cover and gallery): max 5 MB; HEIC refused with a clear message (convert to JPEG/PNG)
+- gallery: `POST /recipes/{id}/images/` (files under `images`) returns the new images, one bad file saves none (and a
+  failed save leaves no files behind); `DELETE /recipes/{id}/images/{image_id}/`
+- deleting a recipe or an image, or replacing the cover, deletes the file from disk
 
 ## Ingredients
 
 - name
 - filled once from RecipeNLG by a management command; admins can add missing ones by hand
+- search for the recipe form: names containing the typed text, case-insensitive, names starting with it first, at most
+  20 results, from 2 typed characters
+- adding a name that already exists is an error
+- names added by hand get basic cleanup (lowercase, trimmed, single spaces). The import's own cleanup rules (merging
+  RecipeNLG duplicates) apply only to imported names
 
 ### Ingredient Pairs
 
 - ingredient_a, ingredient_b
-- score (PMI, see Randomizers)
+- score (PMI, see Randomizers); computed only from RecipeNLG, our own recipes are too few
 
 ## Games
 
