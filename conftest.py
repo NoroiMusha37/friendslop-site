@@ -1,4 +1,5 @@
 import pytest
+import responses
 from django.core.cache import cache
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -12,6 +13,22 @@ PASSWORD = "Strong-pass-2026"
 def clear_rate_limits():
     # Rate-limit counters live in the cache; without this, calls from earlier tests count against later ones
     cache.clear()
+
+
+@pytest.fixture
+def youtube():
+    """Fake YouTube API: register replies with `youtube.get(API_URL, ...)`; real requests are blocked."""
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as mock:
+        yield mock
+
+
+def youtube_video(video_id, title="Video", duration="PT4M13S"):
+    """One item of a YouTube `videos.list` reply."""
+    return {
+        "id": video_id,
+        "snippet": {"title": title, "thumbnails": {"high": {"url": f"https://i.ytimg.com/vi/{video_id}/hq.jpg"}}},
+        "contentDetails": {"duration": duration},
+    }
 
 
 @pytest.fixture

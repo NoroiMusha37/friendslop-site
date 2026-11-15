@@ -1,7 +1,9 @@
+from django.db import transaction
 from rest_framework import serializers
 
-from common.serializers import BaseLinkSerializer, BaseReviewSerializer, RatingsMixin
-from recipes.models import Ingredient, Recipe, RecipeImage, RecipeLink, RecipeReview
+from common.links import prepare_links, save_links
+from common.serializers import BaseReviewSerializer, LinkSerializer, RatingsMixin
+from recipes.models import Ingredient, Recipe, RecipeImage, RecipeReview
 from recipes.signals import delete_file_after_commit
 
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
@@ -24,11 +26,6 @@ class RecipeImageSerializer(serializers.ModelSerializer):
         fields = ("id", "image")
 
 
-class RecipeLinkSerializer(BaseLinkSerializer):
-    class Meta(BaseLinkSerializer.Meta):
-        model = RecipeLink
-
-
 class RecipeReviewSerializer(BaseReviewSerializer):
     class Meta(BaseReviewSerializer.Meta):
         model = RecipeReview
@@ -43,7 +40,7 @@ class RecipeListSerializer(RatingsMixin, serializers.ModelSerializer):
 class RecipeDetailSerializer(RatingsMixin, serializers.ModelSerializer):
     ingredients = IngredientSerializer(many=True, read_only=True)
     images = RecipeImageSerializer(many=True, read_only=True)
-    links = RecipeLinkSerializer(many=True, read_only=True)
+    links = LinkSerializer(many=True, read_only=True)
     reviews = RecipeReviewSerializer(many=True, read_only=True)
     comment_count = serializers.IntegerField(read_only=True)
 
@@ -74,12 +71,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = ("title", "instructions", "cooking_method", "ingredients", "cover_image")
 
-    def create(self, validated_data):
-        ingredients = validated_data.pop("ingredients")
-        recipe = Recipe.objects.create(**validated_data)
-        recipe.ingredients.set(ingredients)
-        return recipe
-
     def update(self, instance, validated_data):
         ingredients = validated_data.pop("ingredients", None)
         if "cover_image" in validated_data and instance.cover_image:
@@ -91,3 +82,26 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         if ingredients is not None:
             instance.ingredients.set(ingredients)
         return instance
+
+
+class RecipeCreateSerializer(RecipeWriteSerializer):
+    """Creating also takes an optional list of links; links are added later through `POST .../links/`."""
+
+    links = serializers.ListField(child=serializers.URLField(max_length=500), required=False, write_only=True)
+
+    class Meta(RecipeWriteSerializer.Meta):
+        fields = (*RecipeWriteSerializer.Meta.fields, "links")
+
+    @staticmethod
+    def validate_links(urls):
+        # Checked (and YouTube asked) before anything is written
+        return prepare_links(urls)
+
+    def create(self, validated_data):
+        ingredients = validated_data.pop("ingredients")
+        links = validated_data.pop("links", [])
+        with transaction.atomic():
+            recipe = Recipe.objects.create(**validated_data)
+            recipe.ingredients.set(ingredients)
+            save_links(recipe, links)
+        return recipe

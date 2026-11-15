@@ -5,9 +5,15 @@ from rest_framework.response import Response
 
 from accounts.permissions import IsAdminOrReadOnly
 from common.ratings import with_combined_rating
+from common.views import LinksMixin
 from recipes.filters import RecipeFilter
 from recipes.models import Recipe
-from recipes.serializers import RecipeDetailSerializer, RecipeListSerializer, RecipeWriteSerializer
+from recipes.serializers import (
+    RecipeCreateSerializer,
+    RecipeDetailSerializer,
+    RecipeListSerializer,
+    RecipeWriteSerializer,
+)
 
 
 # Create and edit take the write fields but answer with the full recipe; this tells the API docs
@@ -15,7 +21,7 @@ from recipes.serializers import RecipeDetailSerializer, RecipeListSerializer, Re
     create=extend_schema(responses={201: RecipeDetailSerializer}),
     partial_update=extend_schema(responses=RecipeDetailSerializer),
 )
-class RecipeViewSet(viewsets.ModelViewSet):
+class RecipeViewSet(LinksMixin, viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filterset_class = RecipeFilter
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
@@ -40,7 +46,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return RecipeListSerializer
-        if self.action in ("create", "partial_update"):
+        if self.action == "create":
+            return RecipeCreateSerializer
+        if self.action == "partial_update":
             return RecipeWriteSerializer
         return RecipeDetailSerializer
 

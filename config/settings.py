@@ -27,6 +27,7 @@ class Env(BaseSettings):
     POSTGRES_PASSWORD: str
     POSTGRES_HOST: str
     POSTGRES_PORT: int = 5432
+    YOUTUBE_API_KEY: str
 
 
 env = Env()
@@ -174,6 +175,8 @@ STATIC_URL = "static/"
 # Uploaded files (recipe images). Served by Django only when DEBUG is on
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+YOUTUBE_API_KEY = env.YOUTUBE_API_KEY
 
 
 # Email

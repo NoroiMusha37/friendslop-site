@@ -56,7 +56,8 @@ Because we are too lazy to do manual data entry, the trough integrates with Thir
 Everything runs in Docker, so you only need Docker installed.
 
 1. Copy the example settings: `cp .env.example .env`
-2. Generate a secret key and put it into `SECRET_KEY` in `.env`, then set your own `POSTGRES_PASSWORD`:
+2. Generate a secret key and put it into `SECRET_KEY` in `.env`, set your own `POSTGRES_PASSWORD`, and put a
+   YouTube Data API v3 key into `YOUTUBE_API_KEY`:
    ```
    docker compose run --rm --no-deps web python -c "import secrets; print(secrets.token_urlsafe(50))"
    ```
