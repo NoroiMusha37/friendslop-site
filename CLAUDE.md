@@ -11,6 +11,8 @@ add short description of acquired knowledge here in bulleted list:
 - Settings are read with `pydantic-settings`. Database connection is built from the same `POSTGRES_*` variables Docker Compose uses (no `DATABASE_URL`). `TIME_ZONE = "Europe/Kyiv"`.
 - Everything runs in Docker (Django + PostgreSQL 18) via Docker Compose, including tests.
 - Django apps live in the repo root (next to `config/`); each app is created (`startapp`, generated stubs are fine) in the phase that first uses it. API URLs are under `/api/v1/`. pytest uses `importmode = "importlib"` (no `__init__.py` in `tests/` folders).
+- Ruff is not in CI: the agent runs `ruff check .` and `ruff format --check .` (in Docker) after each step, before proposing a commit/merge. Unused imports in `startapp` stubs are left as they are. `migrations/` folders are excluded from ruff.
+- Users: admin = `is_superuser` (only the two team superusers, created with `createsuperuser`, which sets `approved_at`). Pending = `approved_at` is null. Rejecting a sign-up deletes the account. `first_name`/`last_name` removed; `last_login`/`date_joined` kept. User is registered in the Django admin panel.
 - Lists filtering uses `django-filter` (added when the first filtered list appears).
 - Data model rule: don't store anything that can be derived (e.g. "has pairs" = EXISTS on IngredientPair, link kind = URL host) or that nothing uses.
 - Workflow: implement the plan one small step at a time. After each step stop, run checks, propose a one-line commit message and wait for the user's review; move on only when the user says so. Never `git push`.

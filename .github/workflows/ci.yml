@@ -18,12 +18,6 @@ jobs:
       - name: Build image
         run: docker compose build
 
-      - name: Lint
-        run: docker compose run --rm web ruff check .
-
-      - name: Check formatting
-        run: docker compose run --rm web ruff format --check .
-
       - name: Check for missing migrations
         run: docker compose run --rm web python manage.py makemigrations --check --dry-run
 

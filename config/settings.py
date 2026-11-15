@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -97,6 +98,9 @@ DATABASES = {
         "PORT": env.POSTGRES_PORT,
     }
 }
+
+
+AUTH_USER_MODEL = "accounts.User"
 
 
 # Password validation
