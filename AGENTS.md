@@ -86,7 +86,8 @@ No child AGENTS.md files yet. Root owns the whole repo:
 - `Dockerfile`, `docker-compose.yml`, `.dockerignore`: everything runs in Docker (`web` = Django, `db` = PostgreSQL 18)
 - `.env.example`: settings template; real `.env` is git-ignored
 - `.github/workflows/ci.yml`: CI on push/PR to `dev` and `main`, runs checks inside the Docker image (ruff is run manually, not in CI)
-- `accounts/`: custom `User` model (admin = `is_superuser`, pending = `approved_at` is null) and its Django admin page
+- `accounts/`: custom `User` model (admin = `is_superuser`, pending = `approved_at` is null), its Django admin page, auth endpoints (`/api/v1/auth/...`) and the `IsAdmin` permission
+- `config/urls.py` also serves the admin-only API docs at `/api/docs/` (schema at `/api/schema/`)
 - `docs/adr.md`: domain model, roles and randomizer rules; has priority over `README.md`
 - `README.md`: project description for the course
 - `CLAUDE.md`: project facts collected from the user

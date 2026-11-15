@@ -67,8 +67,10 @@ Everything runs in Docker, so you only need Docker installed.
 4. Run commands inside the container:
    ```
    docker compose exec web bash
-   python manage.py check
+   python manage.py migrate
+   python manage.py createsuperuser
    ruff check .
    ruff format .
    ```
-5. Stop everything (database data is kept): `docker compose down`
+5. API docs (admins only): log in at http://localhost:8000/admin/, then open http://localhost:8000/api/docs/
+6. Stop everything (database data is kept): `docker compose down`
