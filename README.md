@@ -68,6 +68,12 @@ Everything runs in Docker, so you only need Docker installed.
    make admin
    ```
    Run `make` to list every shortcut (`logs`, `ps`, `migration name=<slug>`, `smoke`, `db-shell`, `db-reset`, ...).
+   Without `make` (e.g. on Windows), run the same steps with Docker Compose:
+   ```
+   docker compose up --build --detach --wait
+   docker compose run --rm web python manage.py migrate
+   docker compose run --rm web python manage.py createsuperuser
+   ```
 4. Run tests and linters inside the container:
    ```
    docker compose exec web bash
@@ -76,4 +82,4 @@ Everything runs in Docker, so you only need Docker installed.
    ruff format .
    ```
 5. API docs (admins only): log in at http://localhost:8000/admin/, then open http://localhost:8000/api/docs/
-6. Stop everything (database data is kept): `make down`
+6. Stop everything (database data is kept): `make down` (or `docker compose down`)
