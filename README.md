@@ -61,18 +61,19 @@ Everything runs in Docker, so you only need Docker installed.
    ```
    docker compose run --rm --no-deps web python -c "import secrets; print(secrets.token_urlsafe(50))"
    ```
-3. Start the database and the server (the API is at http://localhost:8000):
+3. Start the database and the server (the API is at http://localhost:8000), then apply migrations and create an admin:
    ```
-   docker compose up --build
+   make up
+   make migrate
+   make admin
    ```
-4. Run commands inside the container:
+   Run `make` to list every shortcut (`logs`, `ps`, `migration name=<slug>`, `smoke`, `db-shell`, `db-reset`, ...).
+4. Run tests and linters inside the container:
    ```
    docker compose exec web bash
-   python manage.py migrate
-   python manage.py createsuperuser
    pytest
    ruff check .
    ruff format .
    ```
 5. API docs (admins only): log in at http://localhost:8000/admin/, then open http://localhost:8000/api/docs/
-6. Stop everything (database data is kept): `docker compose down`
+6. Stop everything (database data is kept): `make down`

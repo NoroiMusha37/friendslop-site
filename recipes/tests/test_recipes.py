@@ -21,7 +21,11 @@ def titles(response):
 
 
 def make_recipe(title, instructions="Cook it."):
-    return Recipe.objects.create(title=title, instructions=instructions, cooking_method="OTHER")
+    return Recipe.objects.create(
+        title=title,
+        instructions=instructions,
+        cooking_method="OTHER",
+    )
 
 
 def test_regular_user_reads_but_cant_write(user_client, recipe):
@@ -45,7 +49,11 @@ def test_admin_creates_recipe_with_cover(admin_client, ingredient):
         "cover_image": image_file(),
     }
 
-    response = admin_client.post(LIST_URL, data, format="multipart")
+    response = admin_client.post(
+        LIST_URL,
+        data,
+        format="multipart",
+    )
 
     assert response.status_code == 201
     body = response.json()
@@ -54,9 +62,18 @@ def test_admin_creates_recipe_with_cover(admin_client, ingredient):
 
 
 def test_recipe_needs_an_ingredient(admin_client):
-    data = {"title": "Air", "instructions": "-", "cooking_method": "RAW", "ingredients": []}
+    data = {
+        "title": "Air",
+        "instructions": "-",
+        "cooking_method": "RAW",
+        "ingredients": [],
+    }
 
-    response = admin_client.post(LIST_URL, data, format="json")
+    response = admin_client.post(
+        LIST_URL,
+        data,
+        format="json",
+    )
 
     assert response.status_code == 400
     assert "ingredients" in response.json()
@@ -65,29 +82,58 @@ def test_recipe_needs_an_ingredient(admin_client):
 def test_cover_over_5_mb_is_rejected(admin_client, recipe):
     # Random pixels don't compress, so this PNG is about 6 MB
     buffer = io.BytesIO()
-    Image.frombytes("RGB", (1450, 1450), os.urandom(1450 * 1450 * 3)).save(buffer, "PNG")
-    upload = SimpleUploadedFile("big.png", buffer.getvalue(), content_type="image/png")
+    Image.frombytes(
+        "RGB",
+        (1450, 1450),
+        os.urandom(1450 * 1450 * 3),
+    ).save(buffer, "PNG")
+    upload = SimpleUploadedFile(
+        "big.png",
+        buffer.getvalue(),
+        content_type="image/png",
+    )
 
-    response = admin_client.patch(detail_url(recipe), {"cover_image": upload}, format="multipart")
+    response = admin_client.patch(
+        detail_url(recipe),
+        {"cover_image": upload},
+        format="multipart",
+    )
 
     assert response.status_code == 400
     assert "5 MB" in str(response.json()["cover_image"])
 
 
-@pytest.mark.parametrize("new_cover", [image_file("new.png"), ""], ids=["replaced", "removed"])
-def test_old_cover_file_is_deleted(admin_client, recipe, new_cover, django_capture_on_commit_callbacks):
+@pytest.mark.parametrize(
+    "new_cover",
+    [image_file("new.png"), ""],
+    ids=["replaced", "removed"],
+)
+def test_old_cover_file_is_deleted(
+    admin_client,
+    recipe,
+    new_cover,
+    django_capture_on_commit_callbacks,
+):
     recipe.cover_image = image_file("old.png")
     recipe.save()
     old_path = recipe.cover_image.path
 
     with django_capture_on_commit_callbacks(execute=True):
-        response = admin_client.patch(detail_url(recipe), {"cover_image": new_cover}, format="multipart")
+        response = admin_client.patch(
+            detail_url(recipe),
+            {"cover_image": new_cover},
+            format="multipart",
+        )
 
     assert response.status_code == 200
     assert not os.path.exists(old_path)
 
 
-def test_deleting_recipe_deletes_its_files(admin_client, recipe, django_capture_on_commit_callbacks):
+def test_deleting_recipe_deletes_its_files(
+    admin_client,
+    recipe,
+    django_capture_on_commit_callbacks,
+):
     recipe.cover_image = image_file("cover.png")
     recipe.save()
     gallery = RecipeImage.objects.create(recipe=recipe, image=image_file("gallery.png"))
@@ -101,10 +147,22 @@ def test_deleting_recipe_deletes_its_files(admin_client, recipe, django_capture_
 
 def test_ratings_are_shown_per_admin_with_average(user_client, admin, friend):
     both = make_recipe("Both")
-    RecipeReview.objects.create(recipe=both, author=admin, rating=8)
-    RecipeReview.objects.create(recipe=both, author=friend, rating=5)
+    RecipeReview.objects.create(
+        recipe=both,
+        author=admin,
+        rating=8,
+    )
+    RecipeReview.objects.create(
+        recipe=both,
+        author=friend,
+        rating=5,
+    )
     one = make_recipe("One")
-    RecipeReview.objects.create(recipe=one, author=admin, rating=9)
+    RecipeReview.objects.create(
+        recipe=one,
+        author=admin,
+        rating=9,
+    )
 
     by_title = {r["title"]: r for r in user_client.get(LIST_URL).json()}
 
@@ -117,14 +175,34 @@ def test_ratings_are_shown_per_admin_with_average(user_client, admin, friend):
 
 def test_ordering_by_rating_puts_unrated_last(admin_client, admin, friend):
     low = make_recipe("Low")
-    RecipeReview.objects.create(recipe=low, author=admin, rating=3)
+    RecipeReview.objects.create(
+        recipe=low,
+        author=admin,
+        rating=3,
+    )
     high = make_recipe("High")
-    RecipeReview.objects.create(recipe=high, author=friend, rating=9)
+    RecipeReview.objects.create(
+        recipe=high,
+        author=friend,
+        rating=9,
+    )
     make_recipe("Unrated")
 
-    assert titles(admin_client.get(LIST_URL, {"ordering": "-combined_rating"})) == ["High", "Low", "Unrated"]
-    assert titles(admin_client.get(LIST_URL, {"ordering": "combined_rating"})) == ["Low", "High", "Unrated"]
-    assert titles(admin_client.get(LIST_URL, {"ordering": "-rating:admin"})) == ["Low", "Unrated", "High"]
+    assert titles(admin_client.get(LIST_URL, {"ordering": "-combined_rating"})) == [
+        "High",
+        "Low",
+        "Unrated",
+    ]
+    assert titles(admin_client.get(LIST_URL, {"ordering": "combined_rating"})) == [
+        "Low",
+        "High",
+        "Unrated",
+    ]
+    assert titles(admin_client.get(LIST_URL, {"ordering": "-rating:admin"})) == [
+        "Low",
+        "Unrated",
+        "High",
+    ]
 
 
 def test_ordering_by_unknown_admin_is_rejected(admin_client):
@@ -139,7 +217,10 @@ def test_search_ranks_title_matches_first(admin_client):
     make_recipe("Pancakes", instructions="Mix flour and an egg.")
     make_recipe("Toast", instructions="Toast the bread.")
 
-    assert titles(admin_client.get(LIST_URL, {"search": "egg"})) == ["Egg fried rice", "Pancakes"]
+    assert titles(admin_client.get(LIST_URL, {"search": "egg"})) == [
+        "Egg fried rice",
+        "Pancakes",
+    ]
 
 
 def test_filter_by_ingredient(admin_client, recipe):

@@ -26,7 +26,11 @@ class Recipe(models.Model):
     title = models.CharField(max_length=200)
     instructions = models.TextField()
     cooking_method = models.CharField(max_length=20, choices=CookingMethod)
-    ingredients = models.ManyToManyField(Ingredient, through="RecipeIngredient", related_name="recipes")
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        through="RecipeIngredient",
+        related_name="recipes",
+    )
     cover_image = models.ImageField(upload_to="recipes/covers/", blank=True)
 
     def __str__(self):
@@ -39,14 +43,23 @@ class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.PROTECT)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["recipe", "ingredient"], name="unique_recipe_ingredient")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recipe", "ingredient"],
+                name="unique_recipe_ingredient",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.recipe}: {self.ingredient}"
 
 
 class RecipeImage(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="images")
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="images",
+    )
     image = models.ImageField(upload_to="recipes/images/")
 
     def __str__(self):
@@ -54,19 +67,40 @@ class RecipeImage(models.Model):
 
 
 class RecipeLink(BaseLink):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="links")
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="links",
+    )
 
 
 class RecipeReview(BaseReview):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="reviews")
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="reviews",
+    )
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["recipe", "author"], name="unique_recipe_review_author")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recipe", "author"],
+                name="unique_recipe_review_author",
+            ),
+        ]
 
 
 class RecipeComment(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="comments")
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 

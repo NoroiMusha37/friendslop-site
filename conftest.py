@@ -26,30 +26,53 @@ def youtube_video(video_id, title="Video", duration="PT4M13S"):
     """One item of a YouTube `videos.list` reply."""
     return {
         "id": video_id,
-        "snippet": {"title": title, "thumbnails": {"high": {"url": f"https://i.ytimg.com/vi/{video_id}/hq.jpg"}}},
+        "snippet": {
+            "title": title,
+            "thumbnails": {
+                "high": {"url": f"https://i.ytimg.com/vi/{video_id}/hq.jpg"},
+            },
+        },
         "contentDetails": {"duration": duration},
     }
 
 
 @pytest.fixture
 def admin(db):
-    return User.objects.create_superuser("admin", "admin@example.com", PASSWORD)
+    return User.objects.create_superuser(
+        "admin",
+        "admin@example.com",
+        PASSWORD,
+    )
 
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user("user", "user@example.com", PASSWORD, approved_at=timezone.now())
+    return User.objects.create_user(
+        "user",
+        "user@example.com",
+        PASSWORD,
+        approved_at=timezone.now(),
+    )
 
 
 @pytest.fixture
 def pending_user(db):
-    return User.objects.create_user("pending", "pending@example.com", PASSWORD, is_active=False)
+    return User.objects.create_user(
+        "pending",
+        "pending@example.com",
+        PASSWORD,
+        is_active=False,
+    )
 
 
 @pytest.fixture
 def banned_user(db):
     return User.objects.create_user(
-        "banned", "banned@example.com", PASSWORD, is_active=False, approved_at=timezone.now()
+        "banned",
+        "banned@example.com",
+        PASSWORD,
+        is_active=False,
+        approved_at=timezone.now(),
     )
 
 

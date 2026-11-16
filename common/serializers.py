@@ -26,7 +26,10 @@ class LinkSerializer(serializers.Serializer):
 class AddLinksSerializer(serializers.Serializer):
     """Body of `POST .../links/`. The object the links are added to is passed in the context as `owner`."""
 
-    links = serializers.ListField(child=serializers.URLField(max_length=500), allow_empty=False)
+    links = serializers.ListField(
+        child=serializers.URLField(max_length=500),
+        allow_empty=False,
+    )
 
     def validate_links(self, urls):
         existing = set(self.context["owner"].links.values_list("url", flat=True))
@@ -45,7 +48,9 @@ class RatingsMixin(serializers.Serializer):
     def get_ratings(self, obj) -> dict[str, int | None]:
         # The context is shared by every item of a list, so admins are loaded once per request
         if "admins" not in self.context:
-            self.context["admins"] = list(User.objects.filter(is_superuser=True).order_by("id"))
+            self.context["admins"] = list(
+                User.objects.filter(is_superuser=True).order_by("id"),
+            )
         by_author = {review.author_id: review.rating for review in obj.reviews.all()}
         return {admin.username: by_author.get(admin.id) for admin in self.context["admins"]}
 

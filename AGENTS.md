@@ -84,6 +84,7 @@ No child AGENTS.md files yet. Root owns the whole repo:
 
 - `config/`: Django project settings (read from env via pydantic-settings) and URLs
 - `Dockerfile`, `docker-compose.yml`, `.dockerignore`: everything runs in Docker (`web` = Django, `db` = PostgreSQL 18)
+- `Makefile`: dev shortcuts over Docker Compose (`make` lists them); `db-reset` deletes the database volume
 - `.env.example`: settings template; real `.env` is git-ignored
 - `.github/workflows/ci.yml`: CI on push/PR to `dev` and `main`, runs checks inside the Docker image (ruff is run manually, not in CI)
 - `accounts/`: custom `User` model (admin = `is_superuser`, pending = `approved_at` is null), its Django admin page, auth endpoints (`/api/v1/auth/...`), user management (`/api/v1/users/`, rules in `services.py`) and the `IsAdmin` permission

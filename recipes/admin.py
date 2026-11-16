@@ -33,7 +33,13 @@ class RecipeCommentInline(admin.TabularInline):
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ("title", "cooking_method")
     search_fields = ("title",)
-    inlines = [RecipeIngredientInline, RecipeLinkInline, RecipeImageInline, RecipeReviewInline, RecipeCommentInline]
+    inlines = [
+        RecipeIngredientInline,
+        RecipeLinkInline,
+        RecipeImageInline,
+        RecipeReviewInline,
+        RecipeCommentInline,
+    ]
 
 
 @admin.register(Ingredient)

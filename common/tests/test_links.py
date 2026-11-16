@@ -33,7 +33,15 @@ def test_extract_video_id(url, video_id):
 
 
 def test_youtube_info_is_fetched_in_one_call(youtube):
-    youtube.get(API_URL, json={"items": [youtube_video(VIDEO, title="Rick"), youtube_video(OTHER_VIDEO, title="Psy")]})
+    youtube.get(
+        API_URL,
+        json={
+            "items": [
+                youtube_video(VIDEO, title="Rick"),
+                youtube_video(OTHER_VIDEO, title="Psy"),
+            ],
+        },
+    )
     urls = [
         f"https://youtu.be/{VIDEO}",
         f"https://www.youtube.com/watch?v={OTHER_VIDEO}",
@@ -50,7 +58,12 @@ def test_youtube_info_is_fetched_in_one_call(youtube):
         "thumbnail_url": f"https://i.ytimg.com/vi/{VIDEO}/hq.jpg",
     }
     assert links[1]["title"] == "Psy"
-    assert links[2] == {"url": urls[2], "title": "", "duration": None, "thumbnail_url": ""}
+    assert links[2] == {
+        "url": urls[2],
+        "title": "",
+        "duration": None,
+        "thumbnail_url": "",
+    }
 
 
 def test_youtube_link_without_video_is_reported_by_position(youtube):
@@ -62,7 +75,10 @@ def test_youtube_link_without_video_is_reported_by_position(youtube):
 
 
 def test_repeated_and_already_added_links_are_saved_once(youtube):
-    links = prepare_links(["https://a.com", "https://b.com", "https://b.com"], existing_urls={"https://a.com"})
+    links = prepare_links(
+        ["https://a.com", "https://b.com", "https://b.com"],
+        existing_urls={"https://a.com"},
+    )
 
     assert [link["url"] for link in links] == ["https://b.com"]
 
@@ -94,7 +110,11 @@ def test_youtube_down_saves_link_without_info(youtube, reply):
 
 
 def test_invalid_api_key_blocks_saving(youtube):
-    youtube.get(API_URL, status=400, json={"error": {"errors": [{"reason": "badRequest"}]}})
+    youtube.get(
+        API_URL,
+        status=400,
+        json={"error": {"errors": [{"reason": "badRequest"}]}},
+    )
 
     with pytest.raises(YouTubeConfigError):
         prepare_links([f"https://youtu.be/{VIDEO}"])

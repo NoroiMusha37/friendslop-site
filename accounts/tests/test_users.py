@@ -22,7 +22,14 @@ def test_list_hides_superusers(admin_client, user, pending_user):
     ("status", "expected"),
     [("pending", {"pending"}), ("active", {"user"}), ("banned", {"banned"})],
 )
-def test_list_filters_by_status(admin_client, user, pending_user, banned_user, status, expected):
+def test_list_filters_by_status(
+    admin_client,
+    user,
+    pending_user,
+    banned_user,
+    status,
+    expected,
+):
     assert usernames(admin_client.get(USERS_URL, {"status": status})) == expected
 
 
@@ -45,7 +52,10 @@ def test_reject_returns_204(admin_client, pending_user):
     assert not User.objects.filter(pk=pending_user.pk).exists()
 
 
-@pytest.mark.parametrize(("client_fixture", "status"), [("api_client", 401), ("user_client", 403)])
+@pytest.mark.parametrize(
+    ("client_fixture", "status"),
+    [("api_client", 401), ("user_client", 403)],
+)
 def test_only_admins_manage_users(request, pending_user, client_fixture, status):
     client = request.getfixturevalue(client_fixture)
 

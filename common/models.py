@@ -21,7 +21,11 @@ class BaseLink(models.Model):
 class BaseReview(models.Model):
     """An admin's personal review. Each concrete review adds its target and a one-per-author constraint."""
 
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
     rating = models.PositiveSmallIntegerField(validators=[MaxValueValidator(10)])
     text = models.TextField(blank=True)
 

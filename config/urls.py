@@ -33,8 +33,16 @@ urlpatterns = [
         include(
             [
                 path("v1/", include(api_v1)),
-                path("schema/", SpectacularAPIView.as_view(), name="schema"),
-                path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
+                path(
+                    "schema/",
+                    SpectacularAPIView.as_view(),
+                    name="schema",
+                ),
+                path(
+                    "docs/",
+                    SpectacularSwaggerView.as_view(url_name="schema"),
+                    name="docs",
+                ),
             ]
         ),
     ),

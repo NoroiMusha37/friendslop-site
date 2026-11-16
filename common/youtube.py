@@ -20,7 +20,12 @@ VIDEO_URL = re.compile(
     re.IGNORECASE,
 )
 # Errors that mean "try again later"
-TEMPORARY_REASONS = {"quotaExceeded", "rateLimitExceeded", "dailyLimitExceeded", "userRateLimitExceeded"}
+TEMPORARY_REASONS = {
+    "quotaExceeded",
+    "rateLimitExceeded",
+    "dailyLimitExceeded",
+    "userRateLimitExceeded",
+}
 
 
 class YouTubeUnavailable(Exception):
@@ -46,12 +51,24 @@ def extract_video_id(url: str) -> str | None:
 def fetch_videos(video_ids: list[str]) -> dict[str, YouTubeVideo]:
     """Info for the given ids; ids of videos that don't exist are missing from the result."""
     videos = {}
-    for start in range(0, len(video_ids), BATCH_SIZE):
+    for start in range(
+        0,
+        len(video_ids),
+        BATCH_SIZE,
+    ):
         batch = video_ids[start : start + BATCH_SIZE]
-        params = {"part": "snippet,contentDetails", "id": ",".join(batch), "key": settings.YOUTUBE_API_KEY}
+        params = {
+            "part": "snippet,contentDetails",
+            "id": ",".join(batch),
+            "key": settings.YOUTUBE_API_KEY,
+        }
 
         try:
-            response = requests.get(API_URL, params=params, timeout=TIMEOUT_SECONDS)
+            response = requests.get(
+                API_URL,
+                params=params,
+                timeout=TIMEOUT_SECONDS,
+            )
         except requests.RequestException as e:
             raise YouTubeUnavailable from e
 
@@ -67,5 +84,7 @@ def fetch_videos(video_ids: list[str]) -> dict[str, YouTubeVideo]:
                 raise YouTubeUnavailable
             raise YouTubeConfigError
 
-        videos.update({video.id: video for video in YouTubeVideoList.model_validate(response.json()).items})
+        videos.update(
+            {video.id: video for video in YouTubeVideoList.model_validate(response.json()).items},
+        )
     return videos

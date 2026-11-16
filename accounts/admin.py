@@ -9,12 +9,22 @@ from accounts.models import User
 class UserAdmin(DjangoUserAdmin):
     fieldsets = (
         (None, {"fields": ("username", "email", "password")}),
-        ("Status", {"fields": ("is_active", "approved_at", "is_staff", "is_superuser")}),
+        (
+            "Status",
+            {"fields": ("is_active", "approved_at", "is_staff", "is_superuser")},
+        ),
         ("Permissions", {"fields": ("groups", "user_permissions")}),
         ("Dates", {"fields": ("last_login", "date_joined")}),
     )
     add_fieldsets = ((None, {"classes": ("wide",), "fields": ("username", "email", "password1", "password2")}),)
-    list_display = ("username", "email", "is_active", "approved_at", "is_superuser", "date_joined")
+    list_display = (
+        "username",
+        "email",
+        "is_active",
+        "approved_at",
+        "is_superuser",
+        "date_joined",
+    )
     list_filter = ("is_active", "is_superuser")
     search_fields = ("username", "email")
     ordering = ("date_joined",)
@@ -35,22 +45,50 @@ class UserAdmin(DjangoUserAdmin):
                 change(user)
                 changed += 1
             except services.UserStateError as e:
-                self.message_user(request, f"{user.username}: {e}", messages.WARNING)
+                self.message_user(
+                    request,
+                    f"{user.username}: {e}",
+                    messages.WARNING,
+                )
         if changed:
-            self.message_user(request, f"{done} {changed} user(s).", messages.SUCCESS)
+            self.message_user(
+                request,
+                f"{done} {changed} user(s).",
+                messages.SUCCESS,
+            )
 
     @admin.action(description="Approve selected users")
     def approve_users(self, request, queryset):
-        self._apply(request, queryset, services.approve, "Approved")
+        self._apply(
+            request,
+            queryset,
+            services.approve,
+            "Approved",
+        )
 
     @admin.action(description="Reject (delete) selected users")
     def reject_users(self, request, queryset):
-        self._apply(request, queryset, services.reject, "Rejected")
+        self._apply(
+            request,
+            queryset,
+            services.reject,
+            "Rejected",
+        )
 
     @admin.action(description="Ban selected users")
     def ban_users(self, request, queryset):
-        self._apply(request, queryset, services.ban, "Banned")
+        self._apply(
+            request,
+            queryset,
+            services.ban,
+            "Banned",
+        )
 
     @admin.action(description="Unban selected users")
     def unban_users(self, request, queryset):
-        self._apply(request, queryset, services.unban, "Unbanned")
+        self._apply(
+            request,
+            queryset,
+            services.unban,
+            "Unbanned",
+        )

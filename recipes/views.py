@@ -33,11 +33,15 @@ class RecipeViewSet(LinksMixin, viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
-        queryset = with_combined_rating(Recipe.objects.prefetch_related("reviews__author"))
+        queryset = with_combined_rating(
+            Recipe.objects.prefetch_related("reviews__author"),
+        )
         if self.action == "list":
             return queryset
         return queryset.annotate(comment_count=Count("comments", distinct=True)).prefetch_related(
-            "ingredients", "images", "links"
+            "ingredients",
+            "images",
+            "links",
         )
 
     def filter_queryset(self, queryset):
@@ -60,7 +64,10 @@ class RecipeViewSet(LinksMixin, viewsets.ModelViewSet):
 
     def _detail_response(self, recipe, status_code):
         recipe = self.get_queryset().get(pk=recipe.pk)
-        return Response(RecipeDetailSerializer(recipe, context=self.get_serializer_context()).data, status=status_code)
+        return Response(
+            RecipeDetailSerializer(recipe, context=self.get_serializer_context()).data,
+            status=status_code,
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -68,7 +75,11 @@ class RecipeViewSet(LinksMixin, viewsets.ModelViewSet):
         return self._detail_response(serializer.save(), status.HTTP_201_CREATED)
 
     def partial_update(self, request, *args, **kwargs):
-        serializer = self.get_serializer(self.get_object(), data=request.data, partial=True)
+        serializer = self.get_serializer(
+            self.get_object(),
+            data=request.data,
+            partial=True,
+        )
         serializer.is_valid(raise_exception=True)
         return self._detail_response(serializer.save(), status.HTTP_200_OK)
 
@@ -76,7 +87,12 @@ class RecipeViewSet(LinksMixin, viewsets.ModelViewSet):
         request={"multipart/form-data": AddImagesSerializer},
         responses={201: RecipeImageSerializer(many=True)},
     )
-    @action(detail=True, methods=["post"], url_path="images", parser_classes=[MultiPartParser])
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="images",
+        parser_classes=[MultiPartParser],
+    )
     def add_images(self, request, pk=None):
         recipe = self.get_object()
         serializer = AddImagesSerializer(data=request.data)
@@ -92,11 +108,19 @@ class RecipeViewSet(LinksMixin, viewsets.ModelViewSet):
             for image in images:
                 image.image.delete(save=False)
             raise
-        data = RecipeImageSerializer(images, many=True, context=self.get_serializer_context()).data
+        data = RecipeImageSerializer(
+            images,
+            many=True,
+            context=self.get_serializer_context(),
+        ).data
         return Response(data, status=status.HTTP_201_CREATED)
 
     @extend_schema(request=None, responses={204: None})
-    @action(detail=True, methods=["delete"], url_path=r"images/(?P<image_id>\d+)")
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path=r"images/(?P<image_id>\d+)",
+    )
     def delete_image(self, request, pk=None, image_id=None):
         # The file itself is removed by the post_delete handler in recipes/signals.py
         get_object_or_404(self.get_object().images, pk=image_id).delete()

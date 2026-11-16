@@ -48,14 +48,20 @@ def prepare_links(urls: list[str], existing_urls=()) -> list[dict]:
         }
         if videos and index in video_ids:
             video = videos[video_ids[index]]
-            link.update(title=video.title, duration=video.duration, thumbnail_url=video.thumbnail_url)
+            link.update(
+                title=video.title,
+                duration=video.duration,
+                thumbnail_url=video.thumbnail_url,
+            )
         links.append(link)
     return links
 
 
 def position_errors(errors: dict[int, str]) -> serializers.ValidationError:
     """Same shape as DRF's own list errors: {"<position>": ["message"]}."""
-    return serializers.ValidationError({str(index): [message] for index, message in errors.items()})
+    return serializers.ValidationError(
+        {str(index): [message] for index, message in errors.items()},
+    )
 
 
 def save_links(owner, prepared_links: list[dict]):

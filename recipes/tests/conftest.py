@@ -17,7 +17,11 @@ def media_in_tmp(settings, tmp_path):
 
 @pytest.fixture
 def friend(db):
-    return User.objects.create_superuser("friend", "friend@example.com", PASSWORD)
+    return User.objects.create_superuser(
+        "friend",
+        "friend@example.com",
+        PASSWORD,
+    )
 
 
 @pytest.fixture
@@ -27,7 +31,11 @@ def ingredient(db):
 
 @pytest.fixture
 def recipe(ingredient):
-    recipe = Recipe.objects.create(title="Salad", instructions="Chop 2 tomatoes.", cooking_method="RAW")
+    recipe = Recipe.objects.create(
+        title="Salad",
+        instructions="Chop 2 tomatoes.",
+        cooking_method="RAW",
+    )
     recipe.ingredients.add(ingredient)
     return recipe
 
@@ -35,4 +43,8 @@ def recipe(ingredient):
 def image_file(name="cover.png", size=(10, 10)):
     buffer = io.BytesIO()
     Image.new("RGB", size).save(buffer, "PNG")
-    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
+    return SimpleUploadedFile(
+        name,
+        buffer.getvalue(),
+        content_type="image/png",
+    )

@@ -7,7 +7,12 @@ from django.utils import timezone
 class UserManager(DjangoUserManager):
     def create_superuser(self, username, email=None, password=None, **extra_fields):
         extra_fields.setdefault("approved_at", timezone.now())
-        return super().create_superuser(username, email, password, **extra_fields)
+        return super().create_superuser(
+            username,
+            email,
+            password,
+            **extra_fields,
+        )
 
 
 class User(AbstractUser):

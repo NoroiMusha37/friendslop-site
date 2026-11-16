@@ -11,7 +11,15 @@ def test_used_ingredient_cant_be_deleted(recipe, ingredient):
 
 
 def test_admin_reviews_recipe_only_once(recipe, admin):
-    RecipeReview.objects.create(recipe=recipe, author=admin, rating=8)
+    RecipeReview.objects.create(
+        recipe=recipe,
+        author=admin,
+        rating=8,
+    )
 
     with pytest.raises(IntegrityError):
-        RecipeReview.objects.create(recipe=recipe, author=admin, rating=3)
+        RecipeReview.objects.create(
+            recipe=recipe,
+            author=admin,
+            rating=3,
+        )

@@ -6,7 +6,12 @@ from conftest import PASSWORD
 
 
 def register(client, **overrides):
-    data = {"username": "newbie", "email": "newbie@example.com", "password": PASSWORD, "password2": PASSWORD}
+    data = {
+        "username": "newbie",
+        "email": "newbie@example.com",
+        "password": PASSWORD,
+        "password2": PASSWORD,
+    }
     return client.post(reverse("register"), {**data, **overrides})
 
 
@@ -45,7 +50,12 @@ def test_register_rejects_bad_password(api_client, overrides, field):
     ("username_fixture", "message"),
     [("pending_user", "waiting for admin approval"), ("banned_user", "banned")],
 )
-def test_login_explains_why_inactive_user_cant_log_in(api_client, request, username_fixture, message):
+def test_login_explains_why_inactive_user_cant_log_in(
+    api_client,
+    request,
+    username_fixture,
+    message,
+):
     user = request.getfixturevalue(username_fixture)
 
     response = login(api_client, user.username)
@@ -55,7 +65,11 @@ def test_login_explains_why_inactive_user_cant_log_in(api_client, request, usern
 
 
 def test_login_with_wrong_password_reveals_nothing(api_client, pending_user):
-    response = login(api_client, pending_user.username, password="wrong")
+    response = login(
+        api_client,
+        pending_user.username,
+        password="wrong",
+    )
 
     assert response.status_code == 401
     assert "waiting" not in response.json()["detail"]
@@ -68,7 +82,10 @@ def test_approved_user_gets_tokens(api_client, user):
     assert {"access", "refresh"} <= response.json().keys()
 
 
-@pytest.mark.parametrize(("username_fixture", "is_admin"), [("user", False), ("admin", True)])
+@pytest.mark.parametrize(
+    ("username_fixture", "is_admin"),
+    [("user", False), ("admin", True)],
+)
 def test_me_reports_admin_flag(api_client, request, username_fixture, is_admin):
     api_client.force_authenticate(request.getfixturevalue(username_fixture))
 

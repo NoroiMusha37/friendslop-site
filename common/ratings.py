@@ -27,6 +27,8 @@ def order_by_rating(queryset, value):
             ).values("rating")[:1]
         )
     else:
-        raise ValidationError({"ordering": "Use `combined_rating` or `rating:<admin username>`."})
+        raise ValidationError(
+            {"ordering": "Use `combined_rating` or `rating:<admin username>`."},
+        )
     rating = rating.desc(nulls_last=True) if descending else rating.asc(nulls_last=True)
     return queryset.order_by(rating, "-id")

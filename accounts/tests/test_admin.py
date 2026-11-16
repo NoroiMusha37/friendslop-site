@@ -15,7 +15,9 @@ def panel(admin):
 
 def test_admin_action_skips_users_it_cant_change(panel, admin, user):
     response = panel.post(
-        USERS_ADMIN_URL, {"action": "ban_users", "_selected_action": [user.pk, admin.pk]}, follow=True
+        USERS_ADMIN_URL,
+        {"action": "ban_users", "_selected_action": [user.pk, admin.pk]},
+        follow=True,
     )
 
     user.refresh_from_db()
@@ -33,7 +35,14 @@ def test_superuser_cant_be_deleted_with_delete_button(panel, admin):
 
 
 def test_superuser_cant_be_deleted_with_bulk_action(panel, admin, user):
-    panel.post(USERS_ADMIN_URL, {"action": "delete_selected", "_selected_action": [admin.pk, user.pk], "post": "yes"})
+    panel.post(
+        USERS_ADMIN_URL,
+        {
+            "action": "delete_selected",
+            "_selected_action": [admin.pk, user.pk],
+            "post": "yes",
+        },
+    )
 
     assert User.objects.filter(pk=admin.pk).exists()
 

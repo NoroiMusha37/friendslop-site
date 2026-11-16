@@ -14,7 +14,15 @@ class UploadedImageField(serializers.ImageField):
 
     def to_internal_value(self, data):
         # Checked before DRF's own image check, which would only say "not a valid image"
-        if getattr(data, "name", "").lower().endswith((".heic", ".heif")):
+        if (
+            getattr(
+                data,
+                "name",
+                "",
+            )
+            .lower()
+            .endswith((".heic", ".heif"))
+        ):
             raise serializers.ValidationError("HEIC photos aren't supported. Please upload a JPEG or PNG.")
         image = super().to_internal_value(data)
         if image.size > MAX_IMAGE_SIZE:
@@ -42,7 +50,14 @@ class RecipeReviewSerializer(BaseReviewSerializer):
 class RecipeListSerializer(RatingsMixin, serializers.ModelSerializer):
     class Meta:
         model = Recipe
-        fields = ("id", "title", "cooking_method", "cover_image", "ratings", "combined_rating")
+        fields = (
+            "id",
+            "title",
+            "cooking_method",
+            "cover_image",
+            "ratings",
+            "combined_rating",
+        )
 
 
 class RecipeDetailSerializer(RatingsMixin, serializers.ModelSerializer):
@@ -72,12 +87,22 @@ class RecipeDetailSerializer(RatingsMixin, serializers.ModelSerializer):
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
     # Declared explicitly: DRF makes many-to-many fields with a custom link table read-only
-    ingredients = serializers.PrimaryKeyRelatedField(many=True, queryset=Ingredient.objects.all(), allow_empty=False)
+    ingredients = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Ingredient.objects.all(),
+        allow_empty=False,
+    )
     cover_image = UploadedImageField(required=False, allow_null=True)
 
     class Meta:
         model = Recipe
-        fields = ("title", "instructions", "cooking_method", "ingredients", "cover_image")
+        fields = (
+            "title",
+            "instructions",
+            "cooking_method",
+            "ingredients",
+            "cover_image",
+        )
 
     def update(self, instance, validated_data):
         ingredients = validated_data.pop("ingredients", None)
@@ -85,7 +110,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             # The new upload (or null) replaces the old file
             delete_file_after_commit(instance.cover_image)
         for field, value in validated_data.items():
-            setattr(instance, field, value)
+            setattr(
+                instance,
+                field,
+                value,
+            )
         instance.save()
         if ingredients is not None:
             instance.ingredients.set(ingredients)
@@ -95,7 +124,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 class RecipeCreateSerializer(RecipeWriteSerializer):
     """Creating also takes an optional list of links; links are added later through `POST .../links/`."""
 
-    links = serializers.ListField(child=serializers.URLField(max_length=500), required=False, write_only=True)
+    links = serializers.ListField(
+        child=serializers.URLField(max_length=500),
+        required=False,
+        write_only=True,
+    )
 
     class Meta(RecipeWriteSerializer.Meta):
         fields = (*RecipeWriteSerializer.Meta.fields, "links")

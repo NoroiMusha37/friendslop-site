@@ -18,7 +18,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         if attrs["password"] != attrs["password2"]:
             raise serializers.ValidationError({"password2": "Passwords don't match."})
         try:
-            validate_password(attrs["password"], user=User(username=attrs["username"], email=attrs["email"]))
+            validate_password(
+                attrs["password"],
+                user=User(username=attrs["username"], email=attrs["email"]),
+            )
         except DjangoValidationError as e:
             raise serializers.ValidationError({"password": list(e.messages)}) from e
         return attrs
@@ -34,8 +37,14 @@ class LoginSerializer(TokenObtainPairSerializer):
         user = User.objects.filter(username=attrs.get(self.username_field)).first()
         if user and not user.is_active and user.check_password(attrs.get("password", "")):
             if user.approved_at is None:
-                raise exceptions.AuthenticationFailed("Your account is waiting for admin approval.", "pending_approval")
-            raise exceptions.AuthenticationFailed("Your account has been banned.", "banned")
+                raise exceptions.AuthenticationFailed(
+                    "Your account is waiting for admin approval.",
+                    "pending_approval",
+                )
+            raise exceptions.AuthenticationFailed(
+                "Your account has been banned.",
+                "banned",
+            )
         return super().validate(attrs)
 
 
