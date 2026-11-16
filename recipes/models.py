@@ -81,7 +81,7 @@ class RecipeReview(BaseReview):
         related_name="reviews",
     )
 
-    class Meta:
+    class Meta(BaseReview.Meta):
         constraints = [
             models.UniqueConstraint(
                 fields=["recipe", "author"],

@@ -2,15 +2,23 @@ from rest_framework import serializers
 
 from accounts.models import User
 from common.links import prepare_links
+from common.models import REVIEW_TEXT_MAX_LENGTH
 
 
-class BaseReviewSerializer(serializers.ModelSerializer):
-    """Subclasses set `Meta.model` to a `BaseReview` subclass."""
+class ReviewSerializer(serializers.Serializer):
+    """Any app's review (all of them share the `BaseReview` fields), so no per-app subclass is needed.
 
+    Only validates and shows; `ReviewsMixin` saves, because it knows the reviewed object and the author.
+    """
+
+    id = serializers.IntegerField(read_only=True)
     author = serializers.CharField(source="author.username", read_only=True)
-
-    class Meta:
-        fields = ("id", "author", "rating", "text")
+    rating = serializers.IntegerField(min_value=0, max_value=10)
+    text = serializers.CharField(
+        max_length=REVIEW_TEXT_MAX_LENGTH,
+        allow_blank=True,
+        required=False,
+    )
 
 
 class LinkSerializer(serializers.Serializer):

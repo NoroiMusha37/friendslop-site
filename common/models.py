@@ -2,6 +2,8 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator
 from django.db import models
 
+REVIEW_TEXT_MAX_LENGTH = 2000
+
 
 class BaseLink(models.Model):
     """A link of any site. Title, duration and thumbnail are filled in only for YouTube videos."""
@@ -27,10 +29,11 @@ class BaseReview(models.Model):
         related_name="+",
     )
     rating = models.PositiveSmallIntegerField(validators=[MaxValueValidator(10)])
-    text = models.TextField(blank=True)
+    text = models.TextField(max_length=REVIEW_TEXT_MAX_LENGTH, blank=True)
 
     class Meta:
         abstract = True
+        ordering = ["author_id"]
 
     def __str__(self):
         return f"{self.author} ({self.rating}/10)"

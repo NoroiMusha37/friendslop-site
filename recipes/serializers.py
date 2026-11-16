@@ -2,8 +2,8 @@ from django.db import transaction
 from rest_framework import serializers
 
 from common.links import prepare_links, save_links
-from common.serializers import BaseReviewSerializer, LinkSerializer, RatingsMixin
-from recipes.models import Ingredient, Recipe, RecipeImage, RecipeReview
+from common.serializers import LinkSerializer, RatingsMixin, ReviewSerializer
+from recipes.models import Ingredient, Recipe, RecipeImage
 from recipes.signals import delete_file_after_commit
 
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
@@ -42,11 +42,6 @@ class RecipeImageSerializer(serializers.ModelSerializer):
         fields = ("id", "image")
 
 
-class RecipeReviewSerializer(BaseReviewSerializer):
-    class Meta(BaseReviewSerializer.Meta):
-        model = RecipeReview
-
-
 class RecipeListSerializer(RatingsMixin, serializers.ModelSerializer):
     class Meta:
         model = Recipe
@@ -64,7 +59,7 @@ class RecipeDetailSerializer(RatingsMixin, serializers.ModelSerializer):
     ingredients = IngredientSerializer(many=True, read_only=True)
     images = RecipeImageSerializer(many=True, read_only=True)
     links = LinkSerializer(many=True, read_only=True)
-    reviews = RecipeReviewSerializer(many=True, read_only=True)
+    reviews = ReviewSerializer(many=True, read_only=True)
     comment_count = serializers.IntegerField(read_only=True)
 
     class Meta:

@@ -9,7 +9,7 @@ from rest_framework.response import Response
 
 from accounts.permissions import IsAdminOrReadOnly
 from common.ratings import with_combined_rating
-from common.views import LinksMixin
+from common.views import LinksMixin, ReviewsMixin
 from recipes.filters import RecipeFilter
 from recipes.models import Recipe, RecipeImage
 from recipes.serializers import (
@@ -27,7 +27,7 @@ from recipes.serializers import (
     create=extend_schema(responses={201: RecipeDetailSerializer}),
     partial_update=extend_schema(responses=RecipeDetailSerializer),
 )
-class RecipeViewSet(LinksMixin, viewsets.ModelViewSet):
+class RecipeViewSet(LinksMixin, ReviewsMixin, viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filterset_class = RecipeFilter
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]

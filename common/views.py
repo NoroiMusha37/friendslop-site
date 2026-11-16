@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from common.links import save_links
-from common.serializers import AddLinksSerializer, LinkSerializer
+from common.serializers import AddLinksSerializer, LinkSerializer, ReviewSerializer
 
 
 class LinksMixin:
@@ -41,4 +41,53 @@ class LinksMixin:
     )
     def delete_link(self, request, pk=None, link_id=None):
         get_object_or_404(self.get_object().links, pk=link_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ReviewsMixin:
+    """Adds `POST`, `PATCH` and `DELETE .../{id}/review/` to a viewset whose objects have `reviews`. Each request
+    acts on the logged-in admin's own review, so nobody can touch another admin's. Permissions come from the viewset."""
+
+    @extend_schema(
+        request=ReviewSerializer,
+        responses={201: ReviewSerializer},
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="review",
+    )
+    def review(self, request, pk=None):
+        owner = self.get_object()
+        if owner.reviews.filter(author=request.user).exists():
+            return Response(
+                {"detail": "You have already reviewed this. Use PATCH to change your review."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        serializer = ReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        review = owner.reviews.create(author=request.user, **serializer.validated_data)
+        return Response(
+            ReviewSerializer(review).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(
+        request=ReviewSerializer,
+        responses=ReviewSerializer,
+    )
+    @review.mapping.patch
+    def update_review(self, request, pk=None):
+        review = get_object_or_404(self.get_object().reviews, author=request.user)
+        serializer = ReviewSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        for field, value in serializer.validated_data.items():
+            setattr(review, field, value)
+        review.save()
+        return Response(ReviewSerializer(review).data)
+
+    @extend_schema(request=None, responses={204: None})
+    @review.mapping.delete
+    def delete_review(self, request, pk=None):
+        get_object_or_404(self.get_object().reviews, author=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

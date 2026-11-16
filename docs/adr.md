@@ -26,7 +26,9 @@
 - rating: integer 0-10, personal for each admin. Shown per admin (by username) plus a combined rating = average of
   the given ratings; lists can be sorted by any admin's rating or the combined one (unrated last). Visible to everyone
 - review: rating + optional text, personal for each admin. Same for recipes, games and exercises. An admin creates
-  their review with `POST .../{id}/review/`, edits it with `PATCH`, removes it with `DELETE`
+  their review with `POST .../{id}/review/`, edits it with `PATCH`, removes it with `DELETE`. A second `POST` by the
+  same admin gives 409. `POST`/`PATCH` return just the review. Text up to 2,000 characters. Reviews are listed in the
+  same admin order as the per-admin ratings
 - links: any site; only YouTube links get metadata from YouTube API (title, duration, `high` thumbnail), fetched for
   all links of a request in one call
     - `POST .../{id}/links/` with `{"links": [...]}` adds several at once and returns the new links;
@@ -48,8 +50,8 @@
 - cover image: own optional field, replaced by uploading a new one
 - gallery images: several, added at once and removed one by one, no limit on count
 - review
-- comments: from users only, no editing; author deletes own, admins delete any; newest first; length limit
-  1,000-2,000 characters (exact number to confirm)
+- comments: from users only, no editing; author deletes own, admins delete any; newest first; up to 2,000
+  characters
 
 ### Recipes API
 
