@@ -36,8 +36,13 @@
     - a broken YouTube link (no video id, video not found) rejects the whole request, nothing saved; errors point to the
       link's position: `{"links": {"1": ["YouTube video not found."]}}`
     - a link already added, or repeated in the request, is saved once without an error
-    - YouTube down (timeout, server error, quota used up): saved without info, filled in later by a daily command.
-      Invalid or forbidden API key: error 503, nothing saved
+    - YouTube down (timeout, server error, quota used up): saved without info. Invalid or forbidden API key: error
+      503, nothing saved
+    - missing info is filled in by admins with a button (no scheduler: the free host has no cron jobs):
+      `POST .../{id}/links/refresh/` for one object returns `{"links": [all its links], "not_found": [link ids]}`;
+      `POST /links/refresh/` for every link returns
+      `{"filled": n, "not_found": [{"url": ..., "type": "recipe", "object_id": 12}]}`. Links whose video was removed
+      from YouTube stay without info and are listed in `not_found`. YouTube still down gives 503 and nothing changes
 
 ## Recipes
 

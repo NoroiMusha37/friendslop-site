@@ -32,6 +32,14 @@ class YouTubeUnavailable(Exception):
     """YouTube can't be reached right now; links are saved without info and filled in later."""
 
 
+class YouTubeUnavailableError(APIException):
+    """Answer of the refresh endpoints when YouTube still can't be reached; nothing is changed."""
+
+    status_code = 503
+    default_detail = "YouTube can't be reached right now. Try again later."
+    default_code = "youtube_unavailable"
+
+
 class YouTubeConfigError(APIException):
     status_code = 503
     default_detail = "YouTube API key is invalid or not allowed. Check YOUTUBE_API_KEY."

@@ -24,6 +24,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 api_v1 = [
     path("", include("accounts.urls")),
     path("", include("recipes.urls")),
+    path("", include("common.urls")),
 ]
 
 urlpatterns = [

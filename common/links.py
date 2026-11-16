@@ -2,9 +2,17 @@
 
 from datetime import timedelta
 
+from django.apps import apps
 from rest_framework import serializers
 
-from common.youtube import YouTubeUnavailable, extract_video_id, fetch_videos, is_youtube
+from common.models import BaseLink
+from common.youtube import (
+    YouTubeUnavailable,
+    YouTubeUnavailableError,
+    extract_video_id,
+    fetch_videos,
+    is_youtube,
+)
 
 
 def prepare_links(urls: list[str], existing_urls=()) -> list[dict]:
@@ -69,3 +77,39 @@ def save_links(owner, prepared_links: list[dict]):
     return links.model.objects.bulk_create(
         [links.model(**{links.field.name: owner}, **data) for data in prepared_links]
     )
+
+
+def link_models():
+    """Every concrete link model"""
+    return [model for model in apps.get_models() if issubclass(model, BaseLink)]
+
+
+def owner_field(model):
+    """The link's foreign key to the object it belongs to; `BaseLink` has no other."""
+    return next(field for field in model._meta.fields if field.is_relation)
+
+
+def fill_missing_info(links) -> tuple[int, list]:
+    """Fills in the YouTube info of links saved while YouTube was down. Returns how many were filled and the links
+    whose video wasn't found (removed from YouTube since); those stay without info.
+
+    `links` may mix link models. Other sites' links never get info, so they are skipped.
+    """
+    pending = [(link, video_id) for link in links if not link.title and (video_id := extract_video_id(link.url))]
+    try:
+        videos = fetch_videos(list(dict.fromkeys(video_id for _, video_id in pending)))
+    except YouTubeUnavailable as e:
+        raise YouTubeUnavailableError from e
+    filled = 0
+    not_found = []
+    for link, video_id in pending:
+        if video_id not in videos:
+            not_found.append(link)
+            continue
+        video = videos[video_id]
+        link.title = video.title
+        link.duration = video.duration
+        link.thumbnail_url = video.thumbnail_url
+        link.save(update_fields=["title", "duration", "thumbnail_url"])
+        filled += 1
+    return filled, not_found
