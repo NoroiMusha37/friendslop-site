@@ -17,3 +17,22 @@ class IsAdminOrReadOnly(IsAdmin):
         if request.method in SAFE_METHODS:
             return bool(request.user and request.user.is_authenticated)
         return super().has_permission(request, view)
+
+
+class IsRegularUser(BasePermission):
+    """Logged-in users who aren't admins (e.g. only they write recipe comments)."""
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user and request.user.is_authenticated and not request.user.is_superuser,
+        )
+
+
+class IsAuthorOrAdmin(BasePermission):
+    """Any logged-in user passes; an object with an `author` is then allowed only to its author or an admin."""
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        return obj.author_id == request.user.id or request.user.is_superuser

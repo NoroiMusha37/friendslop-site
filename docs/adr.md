@@ -67,6 +67,9 @@
 - gallery: `POST /recipes/{id}/images/` (files under `images`) returns the new images, one bad file saves none (and a
   failed save leaves no files behind); `DELETE /recipes/{id}/images/{image_id}/`
 - deleting a recipe or an image, or replacing the cover, deletes the file from disk
+- comments: `GET /recipes/{id}/comments/` (all of them, no pages), `POST` the same URL (regular users only) returns the
+  new comment, `DELETE /recipes/{id}/comments/{comment_id}/`. A banned user's comments stay. In the Django admin panel
+  comments can only be viewed and deleted
 
 ## Ingredients
 

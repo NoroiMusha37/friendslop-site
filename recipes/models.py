@@ -101,8 +101,11 @@ class RecipeComment(models.Model):
         on_delete=models.CASCADE,
         related_name="+",
     )
-    text = models.TextField()
+    text = models.TextField(max_length=2000)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
 
     def __str__(self):
         return f"{self.author} on {self.recipe}"

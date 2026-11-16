@@ -7,13 +7,14 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
-from accounts.permissions import IsAdminOrReadOnly
+from accounts.permissions import IsAdminOrReadOnly, IsAuthorOrAdmin, IsRegularUser
 from common.ratings import with_combined_rating
 from common.views import LinksMixin, ReviewsMixin
 from recipes.filters import RecipeFilter
-from recipes.models import Recipe, RecipeImage
+from recipes.models import Recipe, RecipeComment, RecipeImage
 from recipes.serializers import (
     AddImagesSerializer,
+    RecipeCommentSerializer,
     RecipeCreateSerializer,
     RecipeDetailSerializer,
     RecipeImageSerializer,
@@ -43,6 +44,13 @@ class RecipeViewSet(LinksMixin, ReviewsMixin, viewsets.ModelViewSet):
             "images",
             "links",
         )
+
+    def get_permissions(self):
+        if self.action == "add_comment":
+            return [IsRegularUser()]
+        if self.action == "delete_comment":
+            return [IsAuthorOrAdmin()]
+        return super().get_permissions()
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
@@ -124,4 +132,40 @@ class RecipeViewSet(LinksMixin, ReviewsMixin, viewsets.ModelViewSet):
     def delete_image(self, request, pk=None, image_id=None):
         # The file itself is removed by the post_delete handler in recipes/signals.py
         get_object_or_404(self.get_object().images, pk=image_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(responses=RecipeCommentSerializer(many=True))
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="comments",
+    )
+    def comments(self, request, pk=None):
+        comments = self.get_object().comments.select_related("author")
+        return Response(RecipeCommentSerializer(comments, many=True).data)
+
+    @extend_schema(
+        request=RecipeCommentSerializer,
+        responses={201: RecipeCommentSerializer},
+    )
+    @comments.mapping.post
+    def add_comment(self, request, pk=None):
+        serializer = RecipeCommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        comment = serializer.save(recipe=self.get_object(), author=request.user)
+        return Response(
+            RecipeCommentSerializer(comment).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(request=None, responses={204: None})
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path=r"comments/(?P<comment_id>\d+)",
+    )
+    def delete_comment(self, request, pk=None, comment_id=None):
+        comment = get_object_or_404(RecipeComment, pk=comment_id, recipe_id=pk)
+        self.check_object_permissions(request, comment)
+        comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

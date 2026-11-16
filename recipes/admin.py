@@ -24,7 +24,17 @@ class RecipeReviewInline(admin.TabularInline):
     extra = 0
 
 
-class RecipeCommentInline(admin.TabularInline):
+class ViewAndDeleteOnly:
+    """Comments come only from users through the API and are never edited, so admins can only read and delete them."""
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+class RecipeCommentInline(ViewAndDeleteOnly, admin.TabularInline):
     model = RecipeComment
     extra = 0
 
@@ -49,5 +59,5 @@ class IngredientAdmin(admin.ModelAdmin):
 
 
 @admin.register(RecipeComment)
-class RecipeCommentAdmin(admin.ModelAdmin):
+class RecipeCommentAdmin(ViewAndDeleteOnly, admin.ModelAdmin):
     list_display = ("recipe", "author", "created_at")

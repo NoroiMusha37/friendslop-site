@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from common.links import prepare_links, save_links
 from common.serializers import LinkSerializer, RatingsMixin, ReviewSerializer
-from recipes.models import Ingredient, Recipe, RecipeImage
+from recipes.models import Ingredient, Recipe, RecipeComment, RecipeImage
 from recipes.signals import delete_file_after_commit
 
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
@@ -40,6 +40,14 @@ class RecipeImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeImage
         fields = ("id", "image")
+
+
+class RecipeCommentSerializer(serializers.ModelSerializer):
+    author = serializers.CharField(source="author.username", read_only=True)
+
+    class Meta:
+        model = RecipeComment
+        fields = ("id", "author", "text", "created_at")
 
 
 class RecipeListSerializer(RatingsMixin, serializers.ModelSerializer):
