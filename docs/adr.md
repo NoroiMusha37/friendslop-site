@@ -75,10 +75,13 @@
 
 - name
 - filled once from RecipeNLG by a management command; admins can add missing ones by hand
-- search for the recipe form: names containing the typed text, case-insensitive, names starting with it first, at most
-  20 results, from 2 typed characters
-- adding a name that already exists is an error
-- names added by hand get basic cleanup (lowercase, trimmed, single spaces). The import's own cleanup rules (merging
+- search for the recipe form (and the recipe list filter): `GET /ingredients/?search=`, any logged-in user. Names
+  containing the typed text, case-insensitive; names starting with it first, then shorter names first, then
+  alphabetical; at most 20 results. Fewer than 2 characters or no `search` gives an empty list
+- `POST /ingredients/` and `DELETE /ingredients/{id}/`: admins only. Adding a name that already exists gives 400 on
+  `name`; deleting an ingredient used in a recipe gives 409 with the number of recipes. Renaming only in the Django
+  admin panel
+- names added by hand (API or Django admin panel) get basic cleanup (lowercase, trimmed, single spaces). The import's own cleanup rules (merging
   RecipeNLG duplicates) apply only to imported names
 
 ### Ingredient Pairs

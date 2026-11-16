@@ -1,9 +1,10 @@
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from common.links import prepare_links, save_links
 from common.serializers import LinkSerializer, RatingsMixin, ReviewSerializer
-from recipes.models import Ingredient, Recipe, RecipeComment, RecipeImage
+from recipes.models import Ingredient, Recipe, RecipeComment, RecipeImage, clean_ingredient_name
 from recipes.signals import delete_file_after_commit
 
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
@@ -30,7 +31,24 @@ class UploadedImageField(serializers.ImageField):
         return image
 
 
+class IngredientNameField(serializers.CharField):
+    """Cleans the name before validators run, so the unique check sees the cleaned name."""
+
+    def to_internal_value(self, data):
+        return clean_ingredient_name(super().to_internal_value(data))
+
+
 class IngredientSerializer(serializers.ModelSerializer):
+    name = IngredientNameField(
+        max_length=100,
+        validators=[
+            UniqueValidator(
+                queryset=Ingredient.objects.all(),
+                message="This ingredient already exists.",
+            ),
+        ],
+    )
+
     class Meta:
         model = Ingredient
         fields = ("id", "name")

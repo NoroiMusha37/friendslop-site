@@ -1,8 +1,8 @@
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, ProtectedError
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
@@ -10,10 +10,11 @@ from rest_framework.response import Response
 from accounts.permissions import IsAdminOrReadOnly, IsAuthorOrAdmin, IsRegularUser
 from common.ratings import with_combined_rating
 from common.views import LinksMixin, ReviewsMixin
-from recipes.filters import RecipeFilter
-from recipes.models import Recipe, RecipeComment, RecipeImage
+from recipes.filters import IngredientFilter, RecipeFilter
+from recipes.models import Ingredient, Recipe, RecipeComment, RecipeImage
 from recipes.serializers import (
     AddImagesSerializer,
+    IngredientSerializer,
     RecipeCommentSerializer,
     RecipeCreateSerializer,
     RecipeDetailSerializer,
@@ -168,4 +169,33 @@ class RecipeViewSet(LinksMixin, ReviewsMixin, viewsets.ModelViewSet):
         comment = get_object_or_404(RecipeComment, pk=comment_id, recipe_id=pk)
         self.check_object_permissions(request, comment)
         comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class IngredientViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Search for the recipe form (`?search=`), adding missing ingredients, deleting unused ones."""
+
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filterset_class = IngredientFilter
+
+    def filter_queryset(self, queryset):
+        if self.action != "list":
+            return queryset
+        return super().filter_queryset(queryset)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            self.get_object().delete()
+        except ProtectedError as e:
+            return Response(
+                {"detail": f"This ingredient is used in {len(e.protected_objects)} recipe(s)."},
+                status=status.HTTP_409_CONFLICT,
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)

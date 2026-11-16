@@ -4,11 +4,20 @@ from django.db import models
 from common.models import BaseLink, BaseReview
 
 
+def clean_ingredient_name(name: str) -> str:
+    """Basic cleanup of a name typed by hand: lowercase, trimmed, single spaces."""
+    return " ".join(name.split()).lower()
+
+
 class Ingredient(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        # Runs in Django admin forms before the unique check, so "Tomato " is caught as a duplicate of "tomato"
+        self.name = clean_ingredient_name(self.name)
 
 
 class CookingMethod(models.TextChoices):
