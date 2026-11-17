@@ -91,8 +91,11 @@
 
 ### Ingredient Pairs
 
-- ingredient_a, ingredient_b
-- score (PMI, see Randomizers); computed only from RecipeNLG, our own recipes are too few
+- ingredient_a, ingredient_b (each pair stored once, smaller id first)
+- score (PMI, see Randomizers); computed only from RecipeNLG, our own recipes are too few. PMI can be negative (two
+  ingredients meet less often than chance); only pairs with a score of 0 or more are stored
+- re-running the import replaces all pairs and never deletes ingredients. A hand-added ingredient gets pairs only if
+  RecipeNLG has it under the same name in enough recipes
 
 ## Games
 
@@ -129,10 +132,16 @@
         - scores come from how often 2 ingredients appear together in RecipeNLG recipes (~2.2M) compared to chance:
           `PMI = log(recipes with both / expected by chance)`, where expected = recipes with A * recipes with B /
           all recipes
-        - pairs seen together in fewer than ~20 recipes are ignored
-        - the next ingredient must not have a negative score with any chosen ingredient; it is picked randomly,
-          weighted by its average score with chosen ones; too low scores are dropped
+        - rare pairs are ignored (thresholds chosen from measurements on the data)
+        - the next ingredient must have a stored pair with every chosen ingredient that has pairs; it is picked
+          randomly, weighted by its average score with chosen ones; too low averages are dropped
         - ingredients without scores are never picked by SMART
+    - `GET /ingredients/random/`, admins only. `mode=naive|smart` (required), `size` 2-20 (default 5),
+      `include=<id>,<id>` optional starting ingredients (both modes; counted in `size`). Returns
+      `{"ingredients": [{"id", "name"}]}`; SMART may return fewer than `size` when nothing else fits
+    - SMART without `include` starts from a random ingredient that has pairs. Starting ingredients without pairs (e.g.
+      added by hand) stay in the result but don't block candidates
+    - 400: unknown `include` id, more `include` ids than `size`
 - games randomizer. Random game based on GENRE and STATUS; status is either mine or the same for both admins
 - training plan randomizer. Pre-fills a new plan in the editor with a given number of exercises chosen by
   MUSCLE_CATEGORY, LOAD_CATEGORY, INTENSITY; saving works like a regular plan

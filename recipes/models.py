@@ -20,6 +20,42 @@ class Ingredient(models.Model):
         self.name = clean_ingredient_name(self.name)
 
 
+class IngredientPair(models.Model):
+    """How well two ingredients go together, computed from RecipeNLG (PMI). Only pairs with a score of 0 or more are
+    stored; a missing pair means the two never fit. Each pair is stored once, with the smaller id as `ingredient_a`."""
+
+    ingredient_a = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    ingredient_b = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    score = models.FloatField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["ingredient_a", "ingredient_b"],
+                name="unique_ingredient_pair",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(ingredient_a__lt=models.F("ingredient_b")),
+                name="ingredient_pair_ordered",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(score__gte=0),
+                name="ingredient_pair_score_not_negative",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.ingredient_a} + {self.ingredient_b} ({self.score:.2f})"
+
+
 class CookingMethod(models.TextChoices):
     BAKED = "BAKED"
     FRIED = "FRIED"
