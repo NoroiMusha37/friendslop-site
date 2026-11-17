@@ -86,16 +86,23 @@
 - `POST /ingredients/` and `DELETE /ingredients/{id}/`: admins only. Adding a name that already exists gives 400 on
   `name`; deleting an ingredient used in a recipe gives 409 with the number of recipes. Renaming only in the Django
   admin panel
-- names added by hand (API or Django admin panel) get basic cleanup (lowercase, trimmed, single spaces). The import's own cleanup rules (merging
-  RecipeNLG duplicates) apply only to imported names
+- names added by hand (API or Django admin panel) get basic cleanup (lowercase, trimmed, single spaces). Imported
+  names come from the reviewed names file (see Ingredient Pairs)
 
 ### Ingredient Pairs
 
 - ingredient_a, ingredient_b (each pair stored once, smaller id first)
 - score (PMI, see Randomizers); computed only from RecipeNLG, our own recipes are too few. PMI can be negative (two
   ingredients meet less often than chance); only pairs with a score of 0 or more are stored
-- re-running the import replaces all pairs and never deletes ingredients. A hand-added ingredient gets pairs only if
-  RecipeNLG has it under the same name in enough recipes
+- import: `python manage.py import_recipenlg <csv>`. Re-running it replaces all pairs and never deletes ingredients
+- which RecipeNLG names are imported comes from `recipes/recipenlg_names.csv`, reviewed by hand once: every name used
+  in at least 100 recipes (rarer ones are mostly junk), mapped to the ingredient it means (`fresh basil` -> `basil`,
+  `kosher salt` -> `salt`, `mayonnais` -> `mayonnaise`) or marked as junk (`ground`, `for sauce`, `baking dish`).
+  Names not in the file are skipped, so the list stays clean on every run; a new name needs a new row. A hand-added
+  ingredient gets pairs only if the file maps some RecipeNLG name to it
+- a pair must appear together in at least 10 recipes (fewer gives scores driven by luck)
+- rejected alternatives: cleanup rules alone (left ~9% junk), a food dictionary as a whitelist (drops real ingredients
+  it lacks). Kept as a fallback: parsing the raw ingredient lines with a recipe parser (see `recipes/recipenlg.py`)
 
 ## Games
 
