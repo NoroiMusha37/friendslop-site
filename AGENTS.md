@@ -76,25 +76,49 @@ Default section order:
 
 ## User Preferences
 
-When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
+When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md.
+
+- Before starting any step: analyze the plan for that step, report all inconsistencies, and ask everything that needs the user's decision; write code only after that is resolved, never pick defaults silently. Start the report with a short plain summary of what the step is about
+- When analyzing a step, put parts that aren't specific to the current app (ratings, reviews, links, query checks) in `common` from the start, written for any model
+- Don't build half a feature now and the rest later; build only what can be done fully in the current step
+- Add dependencies and settings only in the step that first uses them; no unused packages or settings
+- Data model: don't store anything that can be derived or that nothing uses
+- Workflow: one small step at a time. After each step run the checks, propose a one-line commit message and wait for the user's review; commit only after the checks pass and never chain a commit after a check with `;`. Never `git push`
+- Containers: after checks, stop only the containers the agent itself started (check `docker compose ps` first); never stop the user's containers without asking
+- Branches: `main` holds only finished, deployable code. Work happens on `dev`; features get their own branch from `dev` and merge back into `dev` locally. Small fixes to code already in `dev` are committed on `dev`, then `dev` is merged into the open feature branch. Worktree branches are merged locally into the branch they came from, never pushed, and the worktree is deleted after the merge
+- Code style: split calls and literals that don't fit on a short line one item per line with a trailing comma, like the existing code. Comments explain why. Code, identifiers and comments in English
+- Explaining code: explain the actual lines, as one code block per function with a short comment on each line; ask before switching formats
+- Tests: only our own logic and config we rely on (no library behaviour, no log messages), each behaviour once; randomizers and permissions matter most for the course. After writing tests, break the code on purpose to confirm they catch it
+
+## Project Contracts
+
+- REST API backend with JWT; the frontend (plain HTML/CSS/JS) lives in a separate repo
+- Domain model, roles, API behaviour and randomizer rules live in `docs/adr.md` (priority over `README.md`); record new domain/API decisions there. Step planning lives in the plan outside the repo
+- Everything runs in Docker (Django + PostgreSQL 18) via Docker Compose, tests included: `docker compose run --rm web pytest`
+- Settings are read with `pydantic-settings` (`config/settings.py`, class `Env`); the database connection uses the same `POSTGRES_*` variables as Docker Compose (no `DATABASE_URL`). `YOUTUBE_API_KEY` is required, `LOG_LEVEL` optional (INFO). `TIME_ZONE = "Europe/Kyiv"`
+- Logging goes to the console only (no files; Docker and the host keep stdout), set up in `LOGGING` in `config/settings.py`. Each module logs with `logger = logging.getLogger(__name__)`; log events worth looking back on (listed in `docs/adr.md` Logging), not routine requests
+- Django apps live in the repo root and are created (`startapp`) in the phase that first uses them. Never add anything to `__init__.py`; use full-path imports
+- URLs are under `/api/v1/`: each prefix is written once in `config/urls.py` (a new app adds one line to `api_v1`); never repeat a path prefix in any `urls.py`, group paths under one `include([...])` per prefix
+- List filtering uses `django-filter`; never hand-write filters it covers. DTOs are pydantic schemas in the module's `schemas.py`
+- Ruff isn't in CI: run `ruff check .` and `ruff format --check .` in Docker after each step. `migrations/` folders are excluded
+- Tests go in `<app>/tests/test_*.py` (no `tests.py`, no `__init__.py`; pytest `importmode = "importlib"`), shared fixtures in root `conftest.py`, URLs via `reverse()`. Rate-limit cache is cleared before every test, uploads go to a temp `MEDIA_ROOT`
+- Django 6.1 is kept although simplejwt 5.5.1 and drf-spectacular 0.30.0 don't officially list it; tests cover the auth flows
+- `make` isn't installed on the user's Windows machine: docs show the plain `docker compose` command next to each `Makefile` shortcut, and the agent runs `docker compose` directly
 
 ## Child DOX Index
 
-No child AGENTS.md files yet. Root owns the whole repo:
+- `accounts/AGENTS.md`: users, roles and statuses, auth, user management, permission classes
+- `common/AGENTS.md`: code shared by recipes, games and exercises (links + YouTube, reviews, ratings)
+- `recipes/AGENTS.md`: recipes, ingredients and their APIs
 
-- `config/`: Django project settings (read from env via pydantic-settings, logging to the console) and URLs
-- `Dockerfile`, `docker-compose.yml`, `.dockerignore`: everything runs in Docker (`web` = Django, `db` = PostgreSQL 18)
+Owned by the root:
+
+- `config/`: settings (incl. logging) and URLs; also serves the admin-only API docs at `/api/docs/` (schema at `/api/schema/`)
+- `Dockerfile`, `docker-compose.yml`, `.dockerignore`: `web` = Django, `db` = PostgreSQL 18
 - `Makefile`: dev shortcuts over Docker Compose (`make` lists them); `db-reset` deletes the database volume
-- `.env.example`: settings template; real `.env` is git-ignored
-- `.github/workflows/ci.yml`: CI on push/PR to `dev` and `main`, runs checks inside the Docker image (ruff is run manually, not in CI)
-- `accounts/`: custom `User` model (admin = `is_superuser`, pending = `approved_at` is null), its Django admin page, auth endpoints (`/api/v1/auth/...`), user management (`/api/v1/users/`, rules in `services.py`), rate limits that log refusals (`throttling.py`) and the permission classes (`IsAdmin`, `IsAdminOrReadOnly`, `IsRegularUser`, `IsAuthorOrAdmin`)
-- `common/`: code shared by recipes, games and exercises: abstract `BaseLink`/`BaseReview` models, their serializers (`LinkSerializer`, `ReviewSerializer`), ratings (`ratings.py`: combined rating + sort by rating; `serializers.RatingsMixin`; `filters.RatingOrderingFilter`), links (`youtube.py` client, `links.py` checks/saving, `views.LinksMixin` endpoints, `views.RefreshLinksView` at `/api/v1/links/refresh/` in `urls.py`), reviews (`views.ReviewsMixin` endpoints), query parameters checked by a pydantic schema (`query.parse_query`). Works with any model that has `reviews`/`links`
-- `recipes/`: recipes, ingredients, cover/gallery images, links, reviews, comments, their Django admin pages, the ingredients API (`/api/v1/ingredients/`: search, add, delete) and the recipes API (`/api/v1/recipes/`: filters, search, rating sort in `filters.py`; file deletion in `signals.py`), the RecipeNLG import (`recipenlg.py`, command `import_recipenlg`, reviewed names in `recipenlg_names.csv`) filling ingredients and `IngredientPair` scores, the food randomizer (`randomizers.py`, query schema in `schemas.py`, `/api/v1/ingredients/random/`)
+- `.env.example`: settings template; the real `.env` is git-ignored
+- `.github/workflows/ci.yml`: CI on push/PR to `dev` and `main`, runs migrations check and pytest in the Docker image
+- `conftest.py`: shared pytest fixtures (users in each status, API clients, the fake YouTube `youtube`)
 - `media/` (git-ignored): uploaded files, served by Django only when `DEBUG` is on
-- `conftest.py`: shared pytest fixtures (users in each status, API clients); tests live in `<app>/tests/test_*.py`
-- `config/urls.py` also serves the admin-only API docs at `/api/docs/` (schema at `/api/schema/`)
-- `docs/adr.md`: domain model, roles and randomizer rules; has priority over `README.md`
-- `README.md`: project description for the course
-- `CLAUDE.md`: project facts collected from the user
-
-Create a child AGENTS.md when a Django app gets its own rules.
+- `docs/adr.md`: domain and API decisions; `README.md`: project description and how to run it
+- `CLAUDE.md`: loads this file for Claude Code; holds nothing else
