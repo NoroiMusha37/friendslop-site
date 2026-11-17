@@ -1,17 +1,22 @@
+import random
+
 from django.db import transaction
 from django.db.models import Count, ProtectedError
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import mixins, status, viewsets
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view, inline_serializer
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
-from accounts.permissions import IsAdminOrReadOnly, IsAuthorOrAdmin, IsRegularUser
+from accounts.permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrAdmin, IsRegularUser
+from common.query import parse_query
 from common.ratings import with_combined_rating
 from common.views import LinksMixin, ReviewsMixin
 from recipes.filters import IngredientFilter, RecipeFilter
 from recipes.models import Ingredient, Recipe, RecipeComment, RecipeImage
+from recipes.randomizers import naive, smart
+from recipes.schemas import RandomIngredientsQuery
 from recipes.serializers import (
     AddImagesSerializer,
     IngredientSerializer,
@@ -178,12 +183,17 @@ class IngredientViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    """Search for the recipe form (`?search=`), adding missing ingredients, deleting unused ones."""
+    """Search for the recipe form (`?search=`), adding missing ingredients, deleting unused ones, food randomizer."""
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = [IsAdminOrReadOnly]
     filterset_class = IngredientFilter
+
+    def get_permissions(self):
+        if self.action == "random_ingredients":
+            return [IsAdmin()]
+        return super().get_permissions()
 
     def filter_queryset(self, queryset):
         if self.action != "list":
@@ -199,3 +209,29 @@ class IngredientViewSet(
                 status=status.HTTP_409_CONFLICT,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("mode", str, enum=["naive", "smart"], required=True),
+            OpenApiParameter("size", int, description="2-20, default 5; counts the included ingredients"),
+            OpenApiParameter("include", str, description="ingredient ids to start from, e.g. `12,40,7`"),
+        ],
+        responses=inline_serializer("RandomIngredients", {"ingredients": IngredientSerializer(many=True)}),
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="random",
+        url_name="random",
+    )
+    def random_ingredients(self, request):
+        query = parse_query(RandomIngredientsQuery, request)
+        found = Ingredient.objects.in_bulk(query.include)
+
+        if unknown := [i for i in query.include if i not in found]:
+            raise serializers.ValidationError({"include": [f"Unknown ingredient ids: {unknown}."]})
+
+        pick = naive if query.mode == "naive" else smart
+        ids = pick(query.size, query.include, random.Random())
+        by_id = Ingredient.objects.in_bulk(ids)
+        return Response({"ingredients": IngredientSerializer([by_id[i] for i in ids], many=True).data})

@@ -147,8 +147,12 @@
       `include=<id>,<id>` optional starting ingredients (both modes; counted in `size`). Returns
       `{"ingredients": [{"id", "name"}]}`; SMART may return fewer than `size` when nothing else fits
     - SMART without `include` starts from a random ingredient that has pairs. Starting ingredients without pairs (e.g.
-      added by hand) stay in the result but don't block candidates
-    - 400: unknown `include` id, more `include` ids than `size`
+      added by hand) stay in the result but don't block candidates; if none of them has pairs, SMART also starts from a
+      random ingredient that has pairs
+    - result order: the `include` ingredients as given, then the picked ones in pick order. An id given twice counts
+      once
+    - 400 on the field: missing or unknown `mode`, `size` out of range, unknown `include` id, more `include` ids than
+      `size`
 - games randomizer. Random game based on GENRE and STATUS; status is either mine or the same for both admins
 - training plan randomizer. Pre-fills a new plan in the editor with a given number of exercises chosen by
   MUSCLE_CATEGORY, LOAD_CATEGORY, INTENSITY; saving works like a regular plan
