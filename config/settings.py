@@ -133,6 +133,9 @@ SPECTACULAR_SETTINGS = {
     # The docs page is opened in a browser, so admins log in through /admin/ first (session), not with a JWT
     "SERVE_AUTHENTICATION": ["rest_framework.authentication.SessionAuthentication"],
     "SERVE_PERMISSIONS": ["accounts.permissions.IsAdmin"],
+    # Group endpoints in the docs by the part after /api/v1/ (auth, recipes, ...), not all under "v1"
+    "SCHEMA_PATH_PREFIX": r"/api/v1",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 
