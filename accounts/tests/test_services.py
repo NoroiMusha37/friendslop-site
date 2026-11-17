@@ -12,17 +12,17 @@ from accounts.models import User
         (services.unban, "banned_user", "active"),
     ],
 )
-def test_allowed_status_change(request, change, start, result):
+def test_allowed_status_change(request, admin, change, start, result):
     user = request.getfixturevalue(start)
 
-    change(user)
+    change(user, admin)
 
     user.refresh_from_db()
     assert user.status == result
 
 
-def test_reject_deletes_pending_user(pending_user):
-    services.reject(pending_user)
+def test_reject_deletes_pending_user(pending_user, admin):
+    services.reject(pending_user, admin)
 
     assert not User.objects.filter(pk=pending_user.pk).exists()
 
@@ -40,12 +40,12 @@ def test_reject_deletes_pending_user(pending_user):
         (services.unban, "pending_user"),
     ],
 )
-def test_status_change_refused_in_wrong_state(request, change, start):
+def test_status_change_refused_in_wrong_state(request, admin, change, start):
     user = request.getfixturevalue(start)
     status_before = user.status
 
     with pytest.raises(services.UserStateError):
-        change(user)
+        change(user, admin)
 
     user.refresh_from_db()
     assert user.status == status_before

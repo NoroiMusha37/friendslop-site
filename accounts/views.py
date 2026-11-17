@@ -1,9 +1,11 @@
+import logging
+
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.throttling import BaseThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from accounts import services
@@ -11,13 +13,16 @@ from accounts.filters import UserFilter
 from accounts.models import User
 from accounts.permissions import IsAdmin
 from accounts.serializers import LoginSerializer, MeSerializer, RegisterSerializer, UserSerializer
+from accounts.throttling import LoggedScopedRateThrottle
+
+logger = logging.getLogger(__name__)
 
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [LoggedScopedRateThrottle]
     throttle_scope = "register"
 
     def create(self, request, *args, **kwargs):
@@ -32,8 +37,17 @@ class RegisterView(generics.CreateAPIView):
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [LoggedScopedRateThrottle]
     throttle_scope = "login"
+
+    def post(self, request, *args, **kwargs):
+        try:
+            return super().post(request, *args, **kwargs)
+        except AuthenticationFailed as e:
+            # Same client address as the rate limits use
+            ip = BaseThrottle().get_ident(request)
+            logger.warning("Failed login for %r from %s: %s", request.data.get("username"), ip, e.get_codes())
+            raise
 
 
 class MeView(generics.RetrieveAPIView):
@@ -54,7 +68,7 @@ class UserViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def _change_status(self, change):
         user = self.get_object()
         try:
-            change(user)
+            change(user, self.request.user)
         except services.UserStateError as e:
             raise ValidationError({"detail": str(e)}) from e
         return Response(self.get_serializer(user).data)

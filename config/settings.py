@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from datetime import timedelta
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings
 
@@ -28,6 +29,7 @@ class Env(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_PORT: int = 5432
     YOUTUBE_API_KEY: str
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
 
 env = Env()
@@ -185,5 +187,31 @@ YOUTUBE_API_KEY = env.YOUTUBE_API_KEY
 MAILERS = {
     "default": {
         "BACKEND": "django.core.mail.backends.console.EmailBackend",
+    },
+}
+
+
+# Logging
+# https://docs.djangoproject.com/en/6.1/topics/logging/
+# Everything goes to the console, which Docker and the host's log viewer keep. Django's own default prints nothing
+# when DEBUG is off (it emails errors instead), so server errors would be invisible in production
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "plain": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "plain"},
+    },
+    "root": {"handlers": ["console"], "level": env.LOG_LEVEL},
+    "loggers": {
+        # Without its default handlers, so its messages go only through the console handler above, once
+        "django": {"handlers": [], "level": env.LOG_LEVEL},
     },
 }

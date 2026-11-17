@@ -157,6 +157,15 @@
 - training plan randomizer. Pre-fills a new plan in the editor with a given number of exercises chosen by
   MUSCLE_CATEGORY, LOAD_CATEGORY, INTENSITY; saving works like a regular plan
 
+## Logging
+
+- everything goes to the console; the level comes from `LOG_LEVEL` (DEBUG, INFO, WARNING, ERROR; default INFO).
+  Server errors are logged with their traceback whether DEBUG is on or off
+- logged events: YouTube unavailable (warning, with the reason: links saved without info, or refresh failed), YouTube
+  API key rejected (error), links whose video was removed (info), user approved / rejected / banned / unbanned with
+  the admin who did it (info), failed login with username, client address and reason (warning), rate limit hit with
+  the endpoint and client address (warning)
+
 ## Database diagram
 
 ### Recipes

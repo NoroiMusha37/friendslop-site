@@ -82,12 +82,12 @@ When the user requests a durable behavior change, record it here or in the relev
 
 No child AGENTS.md files yet. Root owns the whole repo:
 
-- `config/`: Django project settings (read from env via pydantic-settings) and URLs
+- `config/`: Django project settings (read from env via pydantic-settings, logging to the console) and URLs
 - `Dockerfile`, `docker-compose.yml`, `.dockerignore`: everything runs in Docker (`web` = Django, `db` = PostgreSQL 18)
 - `Makefile`: dev shortcuts over Docker Compose (`make` lists them); `db-reset` deletes the database volume
 - `.env.example`: settings template; real `.env` is git-ignored
 - `.github/workflows/ci.yml`: CI on push/PR to `dev` and `main`, runs checks inside the Docker image (ruff is run manually, not in CI)
-- `accounts/`: custom `User` model (admin = `is_superuser`, pending = `approved_at` is null), its Django admin page, auth endpoints (`/api/v1/auth/...`), user management (`/api/v1/users/`, rules in `services.py`) and the permission classes (`IsAdmin`, `IsAdminOrReadOnly`, `IsRegularUser`, `IsAuthorOrAdmin`)
+- `accounts/`: custom `User` model (admin = `is_superuser`, pending = `approved_at` is null), its Django admin page, auth endpoints (`/api/v1/auth/...`), user management (`/api/v1/users/`, rules in `services.py`), rate limits that log refusals (`throttling.py`) and the permission classes (`IsAdmin`, `IsAdminOrReadOnly`, `IsRegularUser`, `IsAuthorOrAdmin`)
 - `common/`: code shared by recipes, games and exercises: abstract `BaseLink`/`BaseReview` models, their serializers (`LinkSerializer`, `ReviewSerializer`), ratings (`ratings.py`: combined rating + sort by rating; `serializers.RatingsMixin`; `filters.RatingOrderingFilter`), links (`youtube.py` client, `links.py` checks/saving, `views.LinksMixin` endpoints, `views.RefreshLinksView` at `/api/v1/links/refresh/` in `urls.py`), reviews (`views.ReviewsMixin` endpoints), query parameters checked by a pydantic schema (`query.parse_query`). Works with any model that has `reviews`/`links`
 - `recipes/`: recipes, ingredients, cover/gallery images, links, reviews, comments, their Django admin pages, the ingredients API (`/api/v1/ingredients/`: search, add, delete) and the recipes API (`/api/v1/recipes/`: filters, search, rating sort in `filters.py`; file deletion in `signals.py`), the RecipeNLG import (`recipenlg.py`, command `import_recipenlg`, reviewed names in `recipenlg_names.csv`) filling ingredients and `IngredientPair` scores, the food randomizer (`randomizers.py`, query schema in `schemas.py`, `/api/v1/ingredients/random/`)
 - `media/` (git-ignored): uploaded files, served by Django only when `DEBUG` is on

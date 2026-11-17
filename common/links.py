@@ -1,5 +1,6 @@
 """Adding links to any object whose links (a `BaseLink` subclass) are reachable as `links`."""
 
+import logging
 from datetime import timedelta
 
 from django.apps import apps
@@ -13,6 +14,8 @@ from common.youtube import (
     fetch_videos,
     is_youtube,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def prepare_links(urls: list[str], existing_urls=()) -> list[dict]:
@@ -38,8 +41,9 @@ def prepare_links(urls: list[str], existing_urls=()) -> list[dict]:
 
     try:
         videos = fetch_videos(list(dict.fromkeys(video_ids.values()))) if video_ids else {}
-    except YouTubeUnavailable:
-        videos = None  # saved without info; the daily refresh command fills it in
+    except YouTubeUnavailable as e:
+        videos = None  # saved without info; the refresh endpoints fill it in later
+        logger.warning("YouTube unavailable (%s): %d link(s) saved without info", e, len(video_ids))
 
     if videos is not None:
         missing = {index: "YouTube video not found." for index, vid in video_ids.items() if vid not in videos}
@@ -99,6 +103,7 @@ def fill_missing_info(links) -> tuple[int, list]:
     try:
         videos = fetch_videos(list(dict.fromkeys(video_id for _, video_id in pending)))
     except YouTubeUnavailable as e:
+        logger.warning("YouTube unavailable (%s): link info not refreshed", e)
         raise YouTubeUnavailableError from e
     filled = 0
     not_found = []
@@ -112,4 +117,6 @@ def fill_missing_info(links) -> tuple[int, list]:
         link.thumbnail_url = video.thumbnail_url
         link.save(update_fields=["title", "duration", "thumbnail_url"])
         filled += 1
+    if not_found:
+        logger.info("Videos removed from YouTube, links left without info: %s", [link.url for link in not_found])
     return filled, not_found

@@ -1,5 +1,6 @@
 """YouTube Data API v3 client: recognizes video links and fetches their title, duration and thumbnail."""
 
+import logging
 import re
 
 import requests
@@ -7,6 +8,8 @@ from django.conf import settings
 from rest_framework.exceptions import APIException
 
 from common.schemas import YouTubeVideo, YouTubeVideoList
+
+logger = logging.getLogger(__name__)
 
 API_URL = "https://www.googleapis.com/youtube/v3/videos"
 BATCH_SIZE = 50  # the API accepts up to 50 ids per call
@@ -29,7 +32,7 @@ TEMPORARY_REASONS = {
 
 
 class YouTubeUnavailable(Exception):
-    """YouTube can't be reached right now; links are saved without info and filled in later."""
+    """YouTube can't be reached right now; links are saved without info and filled in later. Message = reason."""
 
 
 class YouTubeUnavailableError(APIException):
@@ -78,10 +81,10 @@ def fetch_videos(video_ids: list[str]) -> dict[str, YouTubeVideo]:
                 timeout=TIMEOUT_SECONDS,
             )
         except requests.RequestException as e:
-            raise YouTubeUnavailable from e
+            raise YouTubeUnavailable(type(e).__name__) from e  # e.g. ReadTimeout, ConnectionError
 
         if response.status_code >= 500:
-            raise YouTubeUnavailable
+            raise YouTubeUnavailable(f"HTTP {response.status_code}")
         if response.status_code >= 400:
             try:
                 errors = response.json().get("error", {}).get("errors", [])
@@ -89,7 +92,8 @@ def fetch_videos(video_ids: list[str]) -> dict[str, YouTubeVideo]:
                 errors = []
             reasons = {error.get("reason") for error in errors}
             if reasons & TEMPORARY_REASONS:
-                raise YouTubeUnavailable
+                raise YouTubeUnavailable(", ".join(sorted(reasons & TEMPORARY_REASONS)))
+            logger.error("YouTube API key rejected: HTTP %s, %s", response.status_code, sorted(map(str, reasons)))
             raise YouTubeConfigError
 
         videos.update(

@@ -42,7 +42,7 @@ class UserAdmin(DjangoUserAdmin):
         changed = 0
         for user in queryset:
             try:
-                change(user)
+                change(user, request.user)
                 changed += 1
             except services.UserStateError as e:
                 self.message_user(
