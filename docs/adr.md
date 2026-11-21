@@ -117,6 +117,16 @@
   played solo)
 - review
 
+### Games API
+
+- `GET /games/search/?q=` (admins, at least 2 characters): top 10 RAWG results with `rawg_id` (hidden in the UI, sent
+  back to add the game), `game_id` (our game's id if already added, otherwise null), name, cover, release date, RAWG
+  rating and genre names
+- `POST /games/` with `{"rawg_id": 4200, "categories": ["SOLO"]}` (admins) returns the new game. An already added game
+  (including a double-click) gives 409 with its `game_id`; a game RAWG doesn't have gives 400 on `rawg_id`
+- RAWG failures save nothing and answer 503 with a `detail` saying what went wrong: timeout, unavailable, API key
+  rejected or request limit used up
+
 ## Training
 
 ### Exercises
@@ -170,7 +180,8 @@
 - logged events: YouTube unavailable (warning, with the reason: links saved without info, or refresh failed), YouTube
   API key rejected (error), links whose video was removed (info), user approved / rejected / banned / unbanned with
   the admin who did it (info), failed login with username, client address and reason (warning), rate limit hit with
-  the endpoint and client address (warning)
+  the endpoint and client address (warning), RAWG timeout, unavailable or limit reached (warning), RAWG API key rejected
+  (error)
 
 ## Database diagram
 

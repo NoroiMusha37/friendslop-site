@@ -95,7 +95,7 @@ When the user requests a durable behavior change, record it here or in the relev
 - REST API backend with JWT; the frontend (plain HTML/CSS/JS) lives in a separate repo
 - Domain model, roles, API behaviour and randomizer rules live in `docs/adr.md` (priority over `README.md`); record new domain/API decisions there. Step planning lives in the plan outside the repo
 - Everything runs in Docker (Django + PostgreSQL 18) via Docker Compose, tests included: `docker compose run --rm web pytest`
-- Settings are read with `pydantic-settings` (`config/settings.py`, class `Env`); the database connection uses the same `POSTGRES_*` variables as Docker Compose (no `DATABASE_URL`). `YOUTUBE_API_KEY` is required, `LOG_LEVEL` optional (INFO). `TIME_ZONE = "Europe/Kyiv"`
+- Settings are read with `pydantic-settings` (`config/settings.py`, class `Env`); the database connection uses the same `POSTGRES_*` variables as Docker Compose (no `DATABASE_URL`). `YOUTUBE_API_KEY` and `RAWG_API_KEY` are required, `LOG_LEVEL` optional (INFO). `TIME_ZONE = "Europe/Kyiv"`
 - Logging goes to the console only (no files; Docker and the host keep stdout), set up in `LOGGING` in `config/settings.py`. Each module logs with `logger = logging.getLogger(__name__)`; log events worth looking back on (listed in `docs/adr.md` Logging), not routine requests
 - Django apps live in the repo root and are created (`startapp`) in the phase that first uses them. Never add anything to `__init__.py`; use full-path imports
 - URLs are under `/api/v1/`: each prefix is written once in `config/urls.py` (a new app adds one line to `api_v1`); never repeat a path prefix in any `urls.py`, group paths under one `include([...])` per prefix

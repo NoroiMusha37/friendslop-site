@@ -29,6 +29,7 @@ class Env(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_PORT: int = 5432
     YOUTUBE_API_KEY: str
+    RAWG_API_KEY: str
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
 
@@ -184,6 +185,7 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 YOUTUBE_API_KEY = env.YOUTUBE_API_KEY
+RAWG_API_KEY = env.RAWG_API_KEY
 
 
 # Email
