@@ -106,9 +106,14 @@
 
 ## Games
 
-- added only from RAWG API (cover, description, genre, release date, RAWG rating 0-5)
-- categories: SOLO, COOP, MULTIPLAYER. A game can have several
-- status: PLANNED, DROPPED, PLAYING, COMPLETED. Personal for each admin, for every category (coop games are often
+- added only from RAWG API (cover, description, genres, release date, RAWG rating up to 5). Cover, genres, release
+  date and rating can be missing; RAWG's rating 0 means no rating
+- the RAWG rating keeps its value from when the game was added; admins update it with a refresh button for one game
+  (detail page) or all games (list page)
+- RAWG's free plan requires a visible, active link to RAWG on every frontend page that shows its data (games pages
+  only); placement and wording are free
+- categories: SOLO, COOP, MULTIPLAYER. Set by admins by hand; a game has at least one and can have several
+- status: PLANNED, DROPPED, PLAYING, COMPLETED. One per admin per game, whatever its categories (coop games are often
   played solo)
 - review
 
@@ -153,7 +158,8 @@
       once
     - 400 on the field: missing or unknown `mode`, `size` out of range, unknown `include` id, more `include` ids than
       `size`
-- games randomizer. Random game based on GENRE and STATUS; status is either mine or the same for both admins
+- games randomizer. Random game based on GENRE, CATEGORY and a required STATUS (any of the four); the status is
+  either mine or the same for both admins
 - training plan randomizer. Pre-fills a new plan in the editor with a given number of exercises chosen by
   MUSCLE_CATEGORY, LOAD_CATEGORY, INTENSITY; saving works like a regular plan
 

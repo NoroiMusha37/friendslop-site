@@ -110,6 +110,7 @@ When the user requests a durable behavior change, record it here or in the relev
 - `accounts/AGENTS.md`: users, roles and statuses, auth, user management, permission classes
 - `common/AGENTS.md`: code shared by recipes, games and exercises (links + YouTube, reviews, ratings)
 - `recipes/AGENTS.md`: recipes, ingredients and their APIs
+- `games/AGENTS.md`: games from RAWG, per-admin statuses and reviews
 
 Owned by the root:
 
