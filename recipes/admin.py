@@ -8,6 +8,9 @@ class RecipeIngredientInline(admin.TabularInline):
     autocomplete_fields = ["ingredient"]
     extra = 0
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("recipe", "ingredient")
+
 
 class RecipeLinkInline(admin.TabularInline):
     model = RecipeLink
@@ -23,6 +26,9 @@ class RecipeReviewInline(admin.TabularInline):
     model = RecipeReview
     extra = 0
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("author")
+
 
 class ViewAndDeleteOnly:
     """Comments come only from users through the API and are never edited, so admins can only read and delete them."""
@@ -37,6 +43,9 @@ class ViewAndDeleteOnly:
 class RecipeCommentInline(ViewAndDeleteOnly, admin.TabularInline):
     model = RecipeComment
     extra = 0
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("recipe", "author")
 
 
 @admin.register(Recipe)

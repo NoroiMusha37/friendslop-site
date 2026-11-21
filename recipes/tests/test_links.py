@@ -1,3 +1,5 @@
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from responses import matchers
 
@@ -174,6 +176,24 @@ def test_refresh_while_youtube_is_down_gives_503(admin_client, recipe, youtube):
 
     assert response.status_code == 503
     assert not RecipeLink.objects.exclude(title="").exists()
+
+
+def test_refresh_queries_dont_grow_with_links(admin_client, youtube):
+    videos = [f"video{i:06d}" for i in range(5)]
+    youtube.get(API_URL, json={"items": [youtube_video(video) for video in videos]})
+    one_link = Recipe.objects.create(title="One", instructions="I", cooking_method="RAW")
+    many_links = Recipe.objects.create(title="Many", instructions="I", cooking_method="RAW")
+    RecipeLink.objects.create(recipe=one_link, url=f"https://youtu.be/{videos[0]}")
+    for video in videos[1:]:
+        RecipeLink.objects.create(recipe=many_links, url=f"https://youtu.be/{video}")
+
+    def queries(recipe):
+        with CaptureQueriesContext(connection) as captured:
+            response = admin_client.post(reverse("recipe-refresh-links", args=[recipe.pk]))
+        assert response.status_code == 200
+        return len(captured)
+
+    assert queries(many_links) == queries(one_link)
 
 
 def test_user_cannot_refresh_links(user_client):

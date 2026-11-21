@@ -1,6 +1,7 @@
 """Adding links to any object whose links (a `BaseLink` subclass) are reachable as `links`."""
 
 import logging
+from collections import defaultdict
 from datetime import timedelta
 
 from django.apps import apps
@@ -105,7 +106,7 @@ def fill_missing_info(links) -> tuple[int, list]:
     except YouTubeUnavailable as e:
         logger.warning("YouTube unavailable (%s): link info not refreshed", e)
         raise YouTubeUnavailableError from e
-    filled = 0
+    filled = defaultdict(list)  # link model -> its filled links, since `links` may mix models
     not_found = []
     for link, video_id in pending:
         if video_id not in videos:
@@ -115,8 +116,9 @@ def fill_missing_info(links) -> tuple[int, list]:
         link.title = video.title
         link.duration = video.duration
         link.thumbnail_url = video.thumbnail_url
-        link.save(update_fields=["title", "duration", "thumbnail_url"])
-        filled += 1
+        filled[type(link)].append(link)
+    for model, model_links in filled.items():
+        model.objects.bulk_update(model_links, ["title", "duration", "thumbnail_url"])
     if not_found:
         logger.info("Videos removed from YouTube, links left without info: %s", [link.url for link in not_found])
-    return filled, not_found
+    return sum(len(model_links) for model_links in filled.values()), not_found
