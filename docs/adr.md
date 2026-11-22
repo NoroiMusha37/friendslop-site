@@ -149,19 +149,34 @@
 
 ### Exercises
 
+- name
 - text description
-- links
-- muscle_categories: an exercise can have several
-- load_category (ENUM): weight load
-- intensity: general complexity
+- links (see Exercise Links)
+- muscle_categories: an exercise can have several. CHEST, BACK, SHOULDERS, ARMS, CORE, LEGS (basic set, to be expanded)
+- load_category: weight load. BODYWEIGHT, LIGHT, MEDIUM, HEAVY (basic set, to be expanded)
+- intensity: general complexity, 1-5
 - review
+- archived_at: null means active. Exercises are never deleted, only archived, so stored plans stay complete
+
+### Exercise Links
+
+- ExerciseLink: url (unique), title, duration, thumbnail_url. One row per URL: an exercise can come from several
+  sources (video, web page) and one source can cover several exercises
+- ExerciseExerciseLink: many-to-many relation between exercises and links
+- YouTube info follows the Common link rules and is stored on ExerciseLink, so it is fetched once per URL
 
 ### Training Plan
 
+- name
 - ordered list of exercises (no sets/reps)
-- created only when the plan is saved on the frontend; existing plans can be loaded and edited
-- is_favourite: shared for both admins. Plans that are not favourite get deleted automatically 30 days after their
-  last edit
+- created only when the plan is saved on the frontend
+- immutable: editing a plan creates a new plan with its own created_at and leaves the original unchanged, which also
+  covers reordering
+- source_plan: the plan it was copied from, null for a brand-new plan
+- user: who built it, nullable
+- mode: how it was built. RANDOM, RANDOM_EDIT, MANUAL
+- favourites: personal for each user, stored in UserFavouritePlan. Adding or removing one doesn't create a new plan
+- plans are kept for future dashboards, analysis and randomizer recommendations; nothing deletes them automatically
 - workout sessions are not stored
 
 ## Randomizers
@@ -216,4 +231,5 @@
 ![Training tables](db-training.png)
 
 Unique together: IngredientPair (ingredient_a, ingredient_b); each review (target, author); GameStatus (game, user);
-PlanExercise (plan, order). RecipeIngredient and GameGenre are many-to-many join tables created by Django.
+PlanExercise (plan, order); ExerciseExerciseLink (exercise, link); UserFavouritePlan (user, plan). RecipeIngredient and
+GameGenre are many-to-many join tables created by Django.
