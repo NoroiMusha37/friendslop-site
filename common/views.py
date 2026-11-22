@@ -1,4 +1,4 @@
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers, status
@@ -88,14 +88,16 @@ class ReviewsMixin:
     )
     def review(self, request, pk=None):
         owner = self.get_object()
-        if owner.reviews.filter(author=request.user).exists():
+        serializer = ReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            with transaction.atomic():
+                review = owner.reviews.create(author=request.user, **serializer.validated_data)
+        except IntegrityError:  # the database allows one review per author, which also covers a double-click
             return Response(
                 {"detail": "You have already reviewed this. Use PATCH to change your review."},
                 status=status.HTTP_409_CONFLICT,
             )
-        serializer = ReviewSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        review = owner.reviews.create(author=request.user, **serializer.validated_data)
         return Response(
             ReviewSerializer(review).data,
             status=status.HTTP_201_CREATED,
