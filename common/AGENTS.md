@@ -9,6 +9,7 @@ Code shared by recipes, games and exercises: links with YouTube info, admin revi
 - `models.py`: abstract `BaseLink` and `BaseReview`; each app adds its target and a one-review-per-author constraint
 - `serializers.py`: `LinkSerializer`, `AddLinksSerializer`, `ReviewSerializer`, `RatingsMixin`
 - `views.py`: `LinksMixin` (add, refresh, delete links), `ReviewsMixin` (own review: POST / PATCH / DELETE), `RefreshLinksView` (`/api/v1/links/refresh/`, routed in `urls.py`)
+- `admin.py`: `AdminOwnerInline`, limits an inline's owner dropdown to admins
 - `links.py`: link checks, saving and filling missing YouTube info; `youtube.py` + `schemas.py`: YouTube Data API client
 - `ratings.py`, `filters.py`: combined rating and sorting by rating
 - `query.py`: `parse_query`, checks query parameters with a pydantic schema and answers DRF's usual 400 (used by the randomizers)

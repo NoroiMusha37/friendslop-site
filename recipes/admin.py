@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from common.admin import AdminOwnerInline
 from recipes.models import Ingredient, Recipe, RecipeComment, RecipeImage, RecipeIngredient, RecipeLink, RecipeReview
 
 
@@ -22,7 +23,7 @@ class RecipeImageInline(admin.TabularInline):
     extra = 0
 
 
-class RecipeReviewInline(admin.TabularInline):
+class RecipeReviewInline(AdminOwnerInline, admin.TabularInline):
     model = RecipeReview
     extra = 0
 
