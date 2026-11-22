@@ -159,7 +159,9 @@
 - archived_at: null means active. Exercises are never deleted, only archived (a soft delete), so stored plans stay
   complete. Admins can restore an archived exercise
 - an archived exercise is read-only: still shown in existing plans, hidden from the randomizer, can't be changed or
-  added to a plan. A plan containing one can't be edited until the exercise is restored
+  added to a plan, and its reviews and attached links can't be added, edited or removed. YouTube info refresh still
+  updates its links, since they are shared. A plan containing one can't be edited until the exercise is restored, but
+  it can still be added to or removed from favourites
 - changing an exercise's fields is allowed even when stored plans use it
 
 ### Exercise Links
