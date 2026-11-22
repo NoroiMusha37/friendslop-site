@@ -124,6 +124,8 @@
   rating and genre names
 - `POST /games/` with `{"rawg_id": 4200, "categories": ["SOLO"]}` (admins) returns the new game. An already added game
   (including a double-click) gives 409 with its `game_id`; a game RAWG doesn't have gives 400 on `rawg_id`
+- `PUT /games/{id}/status/` with `{"status": "PLAYING"}` (admins) sets or changes the admin's own status and returns it;
+  `DELETE` clears it and gives 204 even if there was none. Reviews work on a game with any status or none
 - RAWG failures save nothing and answer 503 with a `detail` saying what went wrong: timeout, unavailable, API key
   rejected or request limit used up
 

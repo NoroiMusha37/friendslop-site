@@ -46,6 +46,15 @@ def admin(db):
 
 
 @pytest.fixture
+def friend(db):
+    return User.objects.create_superuser(
+        "friend",
+        "friend@example.com",
+        PASSWORD,
+    )
+
+
+@pytest.fixture
 def user(db):
     return User.objects.create_user(
         "user",

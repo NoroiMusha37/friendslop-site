@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from games.models import Game, GameCategory, Genre
+from games.models import Game, GameCategory, Genre, PlayStatus
 
 MAX_RAWG_ID = 2147483647  # the largest value the database column holds
 
@@ -38,6 +38,10 @@ class GameCreateSerializer(serializers.Serializer):
     @staticmethod
     def validate_categories(value):
         return list(dict.fromkeys(value))
+
+
+class GameStatusSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=PlayStatus.choices)
 
 
 class GameSearchResultSerializer(serializers.Serializer):

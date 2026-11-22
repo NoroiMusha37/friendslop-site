@@ -3,6 +3,14 @@ from django.urls import reverse
 
 from games.models import GameCategory
 
+# Django expects these counters for the status and review sections on every save of the game page
+EMPTY_SECTIONS = {
+    "statuses-TOTAL_FORMS": 0,
+    "statuses-INITIAL_FORMS": 0,
+    "reviews-TOTAL_FORMS": 0,
+    "reviews-INITIAL_FORMS": 0,
+}
+
 
 @pytest.fixture
 def admin_panel(client, admin):
@@ -22,6 +30,7 @@ def test_admin_panel_edits_categories_but_not_rawg_data(admin_panel, game):
         {
             "categories": [GameCategory.COOP, GameCategory.MULTIPLAYER],
             "name": "Changed",
+            **EMPTY_SECTIONS,
         },
     )
 
@@ -34,7 +43,7 @@ def test_admin_panel_edits_categories_but_not_rawg_data(admin_panel, game):
 def test_admin_panel_requires_a_category(admin_panel, game):
     response = admin_panel.post(
         reverse("admin:games_game_change", args=[game.pk]),
-        {"categories": []},
+        {"categories": [], **EMPTY_SECTIONS},
     )
 
     assert response.status_code == 200

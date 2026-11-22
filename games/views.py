@@ -6,10 +6,16 @@ from rest_framework.response import Response
 
 from accounts.permissions import IsAdmin, IsAdminOrReadOnly
 from common.query import parse_query
-from games.models import Game
+from common.views import ReviewsMixin
+from games.models import Game, GameStatus
 from games.rawg import get_game, search_games
 from games.schemas import GameSearchQuery
-from games.serializers import GameCreateSerializer, GameSearchResultSerializer, GameSerializer
+from games.serializers import (
+    GameCreateSerializer,
+    GameSearchResultSerializer,
+    GameSerializer,
+    GameStatusSerializer,
+)
 from games.services import create_game
 
 
@@ -23,7 +29,7 @@ def already_added(rawg_id: int) -> Response:
     )
 
 
-class GameViewSet(viewsets.GenericViewSet):
+class GameViewSet(ReviewsMixin, viewsets.GenericViewSet):
     queryset = Game.objects.all()
     serializer_class = GameSerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -86,3 +92,30 @@ class GameViewSet(viewsets.GenericViewSet):
                 context={"game_ids": game_ids},
             ).data,
         )
+
+    @extend_schema(
+        request=GameStatusSerializer,
+        responses=GameStatusSerializer,
+    )
+    @action(
+        detail=True,
+        methods=["put"],
+        url_path="status",
+        url_name="status",
+    )
+    def set_status(self, request, pk=None):
+        game = self.get_object()
+        serializer = GameStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        GameStatus.objects.update_or_create(
+            game=game,
+            user=request.user,
+            defaults=serializer.validated_data,
+        )
+        return Response(serializer.data)
+
+    @extend_schema(request=None, responses={204: None})
+    @set_status.mapping.delete
+    def clear_status(self, request, pk=None):
+        GameStatus.objects.filter(game=self.get_object(), user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
