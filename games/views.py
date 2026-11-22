@@ -2,6 +2,7 @@ from django.db import IntegrityError
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 from accounts.permissions import IsAdmin, IsAdminOrReadOnly
@@ -9,9 +10,10 @@ from common.query import parse_query
 from common.ratings import with_combined_rating
 from common.views import ReviewsMixin
 from games.filters import GameFilter
-from games.models import Game, GameStatus, Genre
+from games.models import Game, GameCategory, GameStatus, Genre, PlayStatus
+from games.randomizer import pick_game_id
 from games.rawg import get_game, search_games
-from games.schemas import GameSearchQuery
+from games.schemas import GameSearchQuery, RandomGameQuery
 from games.serializers import (
     GameCategoriesSerializer,
     GameCreateSerializer,
@@ -53,7 +55,7 @@ class GameViewSet(
         return GameListSerializer if self.action == "list" else GameDetailSerializer
 
     def get_permissions(self):
-        if self.action == "search":
+        if self.action in ("search", "random_game"):
             return [IsAdmin()]
         return super().get_permissions()
 
@@ -117,6 +119,37 @@ class GameViewSet(
     def genres(self, request):
         genres = Genre.objects.filter(games__isnull=False).distinct().order_by("name")
         return Response(GenreSerializer(genres, many=True).data)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("status", str, enum=PlayStatus.values, required=True),
+            OpenApiParameter(
+                "status_scope",
+                str,
+                enum=["mine", "both"],
+                required=True,
+                description="`mine`: you have this status; `both`: both admins have it",
+            ),
+            OpenApiParameter("genre", int, description="genre id"),
+            OpenApiParameter("category", str, enum=GameCategory.values),
+        ],
+        responses=GameDetailSerializer,
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="random",
+        url_name="random",
+        filterset_class=None,
+    )
+    def random_game(self, request):
+        query = parse_query(RandomGameQuery, request)
+        if query.genre is not None and not Genre.objects.filter(pk=query.genre).exists():
+            raise serializers.ValidationError({"genre": ["Unknown genre."]})
+        game_id = pick_game_id(query, request.user)
+        if game_id is None:
+            raise NotFound("No game matches these filters.")
+        return Response(self.get_serializer(self.get_queryset().get(pk=game_id)).data)
 
     @extend_schema(
         parameters=[OpenApiParameter("q", str, required=True, description="game name, at least 2 characters")],

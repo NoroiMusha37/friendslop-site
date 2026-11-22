@@ -135,6 +135,9 @@
   removes its statuses and reviews
 - `PUT /games/{id}/status/` with `{"status": "PLAYING"}` (admins) sets or changes the admin's own status and returns it;
   `DELETE` clears it and gives 204 even if there was none. Reviews work on a game with any status or none
+- `GET /games/random/?status=&status_scope=mine|both&genre=&category=` (admins) returns a random game in the detail
+  shape. `status` and `status_scope` are required, genre and category optional. Nothing matching gives 404, an unknown
+  genre gives 400
 - RAWG failures save nothing and answer 503 with a `detail` saying what went wrong: timeout, unavailable, API key
   rejected or request limit used up
 

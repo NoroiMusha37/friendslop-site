@@ -10,6 +10,7 @@ The shared game backlog: games copied from RAWG (an external game database), eac
 - `rawg.py` + `schemas.py`: RAWG client, its `RawgError` and reply shapes
 - `views.py`, `urls.py`, `serializers.py`: RAWG search, games (add, list, detail, edit categories, delete), genres, each admin's status and review (`/api/v1/games/`)
 - `filters.py`: list filters, search and sorting
+- `randomizer.py`: picks a random game for `/games/random/`
 - `services.py`: saves a game and its genres from RAWG data
 - `admin.py`: Django admin page for games
 
