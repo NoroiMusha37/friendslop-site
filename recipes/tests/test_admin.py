@@ -1,8 +1,18 @@
+from django.contrib.admin import site
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
-from recipes.models import RecipeComment
+from recipes.admin import RecipeReviewInline
+from recipes.models import Recipe, RecipeComment, RecipeReview
+
+
+def test_review_author_can_only_be_an_admin(admin, user):
+    inline = RecipeReviewInline(Recipe, site)
+
+    field = inline.formfield_for_foreignkey(RecipeReview._meta.get_field("author"), None)
+
+    assert list(field.queryset) == [admin]
 
 
 def test_recipe_page_queries_dont_grow_with_comments(client, admin, user, recipe):
