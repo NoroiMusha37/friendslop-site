@@ -1,7 +1,9 @@
 import pytest
+from django.contrib.admin import site
 from django.urls import reverse
 
-from games.models import GameCategory
+from games.admin import GameReviewInline, GameStatusInline
+from games.models import Game, GameCategory, GameReview, GameStatus
 
 # Django expects these counters for the status and review sections on every save of the game page
 EMPTY_SECTIONS = {
@@ -16,6 +18,21 @@ EMPTY_SECTIONS = {
 def admin_panel(client, admin):
     client.force_login(admin)
     return client
+
+
+@pytest.mark.parametrize(
+    ("inline_class", "model", "owner"),
+    [
+        (GameStatusInline, GameStatus, "user"),
+        (GameReviewInline, GameReview, "author"),
+    ],
+)
+def test_status_and_review_owner_can_only_be_an_admin(admin, user, inline_class, model, owner):
+    inline = inline_class(Game, site)
+
+    field = inline.formfield_for_foreignkey(model._meta.get_field(owner), None)
+
+    assert list(field.queryset) == [admin]
 
 
 def test_game_cant_be_added_in_admin_panel(admin_panel):

@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import admin
 
+from common.admin import AdminOwnerInline
 from games.models import Game, GameCategory, GameReview, GameStatus
 
 
@@ -15,15 +16,16 @@ class GameAdminForm(forms.ModelForm):
         fields = ["categories"]
 
 
-class GameStatusInline(admin.TabularInline):
+class GameStatusInline(AdminOwnerInline, admin.TabularInline):
     model = GameStatus
+    owner_field = "user"
     extra = 0
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("game", "user")
 
 
-class GameReviewInline(admin.TabularInline):
+class GameReviewInline(AdminOwnerInline, admin.TabularInline):
     model = GameReview
     extra = 0
 

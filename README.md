@@ -28,13 +28,13 @@ requires mandatory authentication (no randoms allowed in our slop, strictly no g
 * 🎲 **Slop Roulette (Randomizers):** Too lazy to decide? Let the trough decide for you.
     * **Food:** NAIVE mode throws random ingredients together; SMART mode builds coherent combinations based on how
       often ingredients appear together in ~2.2M real recipes from RecipeNLG.
-    * **Games:** Random game filtered by genre and status.
+    * **Games:** Random game filtered by genre, category and status.
     * **Training:** Random plan built from muscle category, load category and intensity.
 
 **✨ Premium Algorithmic Slop:**
 Because we are too lazy to do manual data entry, the trough integrates with Third-Party APIs to do the heavy lifting:
 
-* **RAWG API (or IGDB):** We can't even be bothered to write game descriptions. Just type the game name, and our backend
+* **RAWG API:** We can't even be bothered to write game descriptions. Just type the game name, and our backend
   slurps up the official cover art, release date, and synopsis directly from the API.
 * **YouTube API:** Looking at raw URLs is too hard for our TikTok-fried attention spans. When a YouTube link is tossed
   into an exercise, the backend automatically extracts the video title, duration, and thumbnail to make the UI pop.
