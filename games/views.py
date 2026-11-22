@@ -23,7 +23,7 @@ from games.serializers import (
     GameStatusSerializer,
     GenreSerializer,
 )
-from games.services import create_game
+from games.services import create_game, refresh_games
 
 
 def already_added(rawg_id: int) -> Response:
@@ -150,6 +150,67 @@ class GameViewSet(
         if game_id is None:
             raise NotFound("No game matches these filters.")
         return Response(self.get_serializer(self.get_queryset().get(pk=game_id)).data)
+
+    @extend_schema(
+        request=None,
+        responses=inline_serializer(
+            "RefreshGameResult",
+            {
+                "game": GameDetailSerializer(),
+                "not_found": serializers.BooleanField(),
+            },
+        ),
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="refresh",
+        url_name="refresh",
+    )
+    def refresh(self, request, pk=None):
+        game = self.get_object()
+        _, not_found = refresh_games([game])
+        game = self.get_queryset().get(pk=game.pk)  # reloads the genres the refresh may have changed
+        return Response(
+            {
+                "game": self.get_serializer(game).data,
+                "not_found": bool(not_found),
+            },
+        )
+
+    @extend_schema(
+        operation_id="games_refresh_all",  # the API docs need it, since one game's refresh has the same action name
+        request=None,
+        responses=inline_serializer(
+            "RefreshGamesResult",
+            {
+                "updated": serializers.IntegerField(),
+                "not_found": inline_serializer(
+                    "GameNotOnRawg",
+                    {
+                        "id": serializers.IntegerField(),
+                        "name": serializers.CharField(),
+                    },
+                    many=True,
+                ),
+            },
+        ),
+    )
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="refresh",
+        url_name="refresh-all",
+        filterset_class=None,
+    )
+    def refresh_all(self, request):
+        updated, not_found = refresh_games(list(Game.objects.order_by("id")))
+        return Response(
+            {
+                "updated": updated,
+                "not_found": [{"id": game.pk, "name": game.name} for game in not_found],
+            },
+        )
 
     @extend_schema(
         parameters=[OpenApiParameter("q", str, required=True, description="game name, at least 2 characters")],

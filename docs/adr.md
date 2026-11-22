@@ -108,8 +108,9 @@
 
 - added only from RAWG API (cover, description, genres, release date, RAWG rating up to 5). Cover, genres, release
   date and rating can be missing; RAWG's rating 0 means no rating
-- the RAWG rating keeps its value from when the game was added; admins update it with a refresh button for one game
-  (detail page) or all games (list page)
+- RAWG data keeps its values from when the game was added; admins update it with a refresh button for one game (detail
+  page) or all games (list page). A refresh copies name, description, cover, release date, rating and genres, clearing
+  what RAWG no longer has, and never touches categories, statuses or reviews
 - RAWG's free plan requires a visible, active link to RAWG on every frontend page that shows its data (games pages
   only); placement and wording are free
 - categories: SOLO, COOP, MULTIPLAYER. Set by admins by hand; a game has at least one and can have several
@@ -138,6 +139,9 @@
 - `GET /games/random/?status=&status_scope=mine|both&genre=&category=` (admins) returns a random game in the detail
   shape. `status` and `status_scope` are required, genre and category optional. Nothing matching gives 404, an unknown
   genre gives 400
+- `POST /games/{id}/refresh/` (admins) returns `{"game": {...}, "not_found": false}`; `POST /games/refresh/` (admins)
+  returns `{"updated": 12, "not_found": [{"id": 5, "name": "Portal"}]}` and sends one RAWG request per game. A game RAWG
+  no longer has stays unchanged and is reported in `not_found`
 - RAWG failures save nothing and answer 503 with a `detail` saying what went wrong: timeout, unavailable, API key
   rejected or request limit used up
 
