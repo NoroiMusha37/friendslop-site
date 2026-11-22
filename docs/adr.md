@@ -156,7 +156,11 @@
 - load_category: weight load. BODYWEIGHT, LIGHT, MEDIUM, HEAVY (basic set, to be expanded)
 - intensity: general complexity, 1-5
 - review
-- archived_at: null means active. Exercises are never deleted, only archived, so stored plans stay complete
+- archived_at: null means active. Exercises are never deleted, only archived (a soft delete), so stored plans stay
+  complete. Admins can restore an archived exercise
+- an archived exercise is read-only: still shown in existing plans, hidden from the randomizer, can't be changed or
+  added to a plan. A plan containing one can't be edited until the exercise is restored
+- changing an exercise's fields is allowed even when stored plans use it
 
 ### Exercise Links
 
@@ -164,6 +168,8 @@
   sources (video, web page) and one source can cover several exercises
 - ExerciseExerciseLink: many-to-many relation between exercises and links
 - YouTube info follows the Common link rules and is stored on ExerciseLink, so it is fetched once per URL
+- detaching a link from an exercise removes only the relation; the ExerciseLink row stays and can be reused
+- `POST /links/refresh/` lists a removed video once per exercise using it, each entry with one `url` and one `object_id`
 
 ### Training Plan
 
@@ -175,8 +181,10 @@
 - source_plan: the plan it was copied from, null for a brand-new plan
 - user: who built it, nullable
 - mode: how it was built. RANDOM, RANDOM_EDIT, MANUAL
-- favourites: personal for each user, stored in UserFavouritePlan. Adding or removing one doesn't create a new plan
-- plans are kept for future dashboards, analysis and randomizer recommendations; nothing deletes them automatically
+- favourites: admins only, personal for each admin, stored in UserFavouritePlan. Adding or removing one doesn't create
+  a new plan, and a new plan never inherits favourites from its source
+- plans are kept for future dashboards, analysis and randomizer recommendations: there is no delete endpoint and
+  nothing deletes them automatically
 - workout sessions are not stored
 
 ## Randomizers
