@@ -10,12 +10,12 @@ def with_combined_rating(queryset):
     return queryset.annotate(combined_rating=Avg("reviews__rating"))
 
 
-def order_by_rating(queryset, value):
-    """`value` is `combined_rating` or `rating:<admin username>`, with `-` for highest first. Unrated go last."""
+def order_by_rating(queryset, value, rating_fields=("combined_rating",)):
+    """`value` is one of `rating_fields` or `rating:<admin username>`, with `-` for highest first. Unrated go last."""
     descending = value.startswith("-")
     key = value.removeprefix("-")
-    if key == "combined_rating":
-        rating = F("combined_rating")
+    if key in rating_fields:
+        rating = F(key)
     elif key.startswith("rating:"):
         username = key.removeprefix("rating:")
         if not User.objects.filter(username=username, is_superuser=True).exists():
@@ -27,8 +27,9 @@ def order_by_rating(queryset, value):
             ).values("rating")[:1]
         )
     else:
+        names = ", ".join(f"`{field}`" for field in rating_fields)
         raise ValidationError(
-            {"ordering": "Use `combined_rating` or `rating:<admin username>`."},
+            {"ordering": f"Use {names} or `rating:<admin username>`."},
         )
     rating = rating.desc(nulls_last=True) if descending else rating.asc(nulls_last=True)
     return queryset.order_by(rating, "-id")

@@ -131,6 +131,10 @@ def test_admin_adds_game_from_rawg(admin_client, rawg):
         "rawg_rating": 4.6,
         "categories": ["COOP", "SOLO"],
         "genres": [{"id": game.genres.get().pk, "name": "Puzzle"}],
+        "statuses": {"admin": None},
+        "ratings": {"admin": None},
+        "combined_rating": None,
+        "reviews": [],
     }
 
 

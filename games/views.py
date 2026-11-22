@@ -1,20 +1,25 @@
 from django.db import IntegrityError
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
-from rest_framework import serializers, status, viewsets
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from accounts.permissions import IsAdmin, IsAdminOrReadOnly
 from common.query import parse_query
+from common.ratings import with_combined_rating
 from common.views import ReviewsMixin
-from games.models import Game, GameStatus
+from games.filters import GameFilter
+from games.models import Game, GameStatus, Genre
 from games.rawg import get_game, search_games
 from games.schemas import GameSearchQuery
 from games.serializers import (
+    GameCategoriesSerializer,
     GameCreateSerializer,
+    GameDetailSerializer,
+    GameListSerializer,
     GameSearchResultSerializer,
-    GameSerializer,
     GameStatusSerializer,
+    GenreSerializer,
 )
 from games.services import create_game
 
@@ -29,20 +34,39 @@ def already_added(rawg_id: int) -> Response:
     )
 
 
-class GameViewSet(ReviewsMixin, viewsets.GenericViewSet):
-    queryset = Game.objects.all()
-    serializer_class = GameSerializer
+class GameViewSet(
+    ReviewsMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     permission_classes = [IsAdminOrReadOnly]
+    filterset_class = GameFilter
+
+    def get_queryset(self):
+        return with_combined_rating(
+            Game.objects.prefetch_related("genres", "statuses", "reviews__author"),
+        )
+
+    def get_serializer_class(self):
+        return GameListSerializer if self.action == "list" else GameDetailSerializer
 
     def get_permissions(self):
         if self.action == "search":
             return [IsAdmin()]
         return super().get_permissions()
 
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        if self.action == "list" and not self.request.query_params.get("ordering"):
+            return queryset.order_by("-id")
+        return queryset
+
     @extend_schema(
         request=GameCreateSerializer,
         responses={
-            201: GameSerializer,
+            201: GameDetailSerializer,
             409: inline_serializer(
                 "GameAlreadyAdded",
                 {
@@ -67,7 +91,32 @@ class GameViewSet(ReviewsMixin, viewsets.GenericViewSet):
         except IntegrityError:
             # A double-click: the other request saved the game after the check above
             return already_added(rawg_id)
-        return Response(GameSerializer(game).data, status=status.HTTP_201_CREATED)
+        game = self.get_queryset().get(pk=game.pk)  # adds the ratings the reply shows
+        return Response(self.get_serializer(game).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=GameCategoriesSerializer,
+        responses=GameDetailSerializer,
+    )
+    def partial_update(self, request, pk=None):
+        game = self.get_object()
+        serializer = GameCategoriesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        game.categories = serializer.validated_data["categories"]
+        game.save(update_fields=["categories"])
+        return Response(self.get_serializer(game).data)
+
+    @extend_schema(responses=GenreSerializer(many=True))
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="genres",
+        url_name="genres",
+        filterset_class=None,
+    )
+    def genres(self, request):
+        genres = Genre.objects.filter(games__isnull=False).distinct().order_by("name")
+        return Response(GenreSerializer(genres, many=True).data)
 
     @extend_schema(
         parameters=[OpenApiParameter("q", str, required=True, description="game name, at least 2 characters")],

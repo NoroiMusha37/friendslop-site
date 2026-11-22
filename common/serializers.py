@@ -53,14 +53,17 @@ class RatingsMixin(serializers.Serializer):
     ratings = serializers.SerializerMethodField()
     combined_rating = serializers.SerializerMethodField()
 
-    def get_ratings(self, obj) -> dict[str, int | None]:
+    def admins(self) -> list[User]:
         # The context is shared by every item of a list, so admins are loaded once per request
         if "admins" not in self.context:
             self.context["admins"] = list(
                 User.objects.filter(is_superuser=True).order_by("id"),
             )
+        return self.context["admins"]
+
+    def get_ratings(self, obj) -> dict[str, int | None]:
         by_author = {review.author_id: review.rating for review in obj.reviews.all()}
-        return {admin.username: by_author.get(admin.id) for admin in self.context["admins"]}
+        return {admin.username: by_author.get(admin.id) for admin in self.admins()}
 
     @staticmethod
     def get_combined_rating(obj) -> float | None:

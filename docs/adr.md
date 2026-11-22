@@ -124,6 +124,15 @@
   rating and genre names
 - `POST /games/` with `{"rawg_id": 4200, "categories": ["SOLO"]}` (admins) returns the new game. An already added game
   (including a double-click) gives 409 with its `game_id`; a game RAWG doesn't have gives 400 on `rawg_id`
+- list: id, name, cover, release date, RAWG rating, categories, genres, statuses per admin
+  (`{"<admin username>": "PLAYING", "<other admin username>": null}`), ratings per admin, combined rating (sent for the
+  frontend, which doesn't display it or the id). Newest first by default. Detail adds description and reviews
+- list options, one value each: `?genre=<id>`, `?category=`, `?search=` (name), `?status=` (any admin has it), `?admin=`
+  (with `status`, that admin has it; alone, that admin has any status; unknown admin gives 400),
+  `?ordering=rawg_rating`, `combined_rating` or `rating:<admin username>` (`-` for highest first, unrated last)
+- `GET /games/genres/`: genres that at least one game has, by name
+- `PATCH /games/{id}/` with `{"categories": [...]}` (admins) returns the game; `DELETE /games/{id}/` (admins) also
+  removes its statuses and reviews
 - `PUT /games/{id}/status/` with `{"status": "PLAYING"}` (admins) sets or changes the admin's own status and returns it;
   `DELETE` clears it and gives 204 even if there was none. Reviews work on a game with any status or none
 - RAWG failures save nothing and answer 503 with a `detail` saying what went wrong: timeout, unavailable, API key

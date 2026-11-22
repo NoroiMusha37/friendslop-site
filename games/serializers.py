@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from common.serializers import RatingsMixin, ReviewSerializer
 from games.models import Game, GameCategory, Genre, PlayStatus
 
 MAX_RAWG_ID = 2147483647  # the largest value the database column holds
@@ -11,25 +12,38 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ["id", "name"]
 
 
-class GameSerializer(serializers.ModelSerializer):
+class GameListSerializer(RatingsMixin, serializers.ModelSerializer):
     genres = GenreSerializer(many=True, read_only=True)
+    statuses = serializers.SerializerMethodField()
 
     class Meta:
         model = Game
         fields = [
             "id",
             "name",
-            "description",
             "cover_url",
             "release_date",
             "rawg_rating",
             "categories",
             "genres",
+            "statuses",
+            "ratings",
+            "combined_rating",
         ]
 
+    def get_statuses(self, game) -> dict[str, str | None]:
+        by_user = {status.user_id: status.status for status in game.statuses.all()}
+        return {admin.username: by_user.get(admin.id) for admin in self.admins()}
 
-class GameCreateSerializer(serializers.Serializer):
-    rawg_id = serializers.IntegerField(min_value=1, max_value=MAX_RAWG_ID)
+
+class GameDetailSerializer(GameListSerializer):
+    reviews = ReviewSerializer(many=True, read_only=True)
+
+    class Meta(GameListSerializer.Meta):
+        fields = [*GameListSerializer.Meta.fields, "description", "reviews"]
+
+
+class GameCategoriesSerializer(serializers.Serializer):
     categories = serializers.ListField(
         child=serializers.ChoiceField(choices=GameCategory.choices),
         allow_empty=False,
@@ -38,6 +52,10 @@ class GameCreateSerializer(serializers.Serializer):
     @staticmethod
     def validate_categories(value):
         return list(dict.fromkeys(value))
+
+
+class GameCreateSerializer(GameCategoriesSerializer):
+    rawg_id = serializers.IntegerField(min_value=1, max_value=MAX_RAWG_ID)
 
 
 class GameStatusSerializer(serializers.Serializer):
