@@ -24,7 +24,7 @@ requires mandatory authentication (no randoms allowed in our slop, strictly no g
 * 🎮 **Digital Slop (Video Games):** Maintain a backlog of games we've played or pretend we're going to play. Each of us
   tracks our own status, rates games and writes scathing reviews.
 * 🏋️ **Sweaty Slop (Workouts):** Describe exercises, paste links to fitness videos that we will probably ignore, and
-  assemble them into workout plans. Plans we don't favourite quietly rot away after some time.
+  assemble them into workout plans. Every saved plan is kept, and each of us can favourite the ones worth repeating.
 * 🎲 **Slop Roulette (Randomizers):** Too lazy to decide? Let the trough decide for you.
     * **Food:** NAIVE mode throws random ingredients together; SMART mode builds coherent combinations based on how
       often ingredients appear together in ~2.2M real recipes from RecipeNLG.

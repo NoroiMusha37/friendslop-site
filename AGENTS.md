@@ -111,6 +111,7 @@ When the user requests a durable behavior change, record it here or in the relev
 - `common/AGENTS.md`: code shared by recipes, games and exercises (links + YouTube, reviews, ratings)
 - `recipes/AGENTS.md`: recipes, ingredients and their APIs
 - `games/AGENTS.md`: games from RAWG, per-admin statuses and reviews
+- `exercises/AGENTS.md`: exercises, shared links, immutable training plans, favourites, training randomizer
 
 Owned by the root:
 

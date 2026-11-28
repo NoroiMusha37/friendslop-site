@@ -19,11 +19,12 @@ from common.youtube import (
 logger = logging.getLogger(__name__)
 
 
-def prepare_links(urls: list[str], existing_urls=()) -> list[dict]:
+def prepare_links(urls: list[str], existing_urls=(), stored_urls=()) -> list[dict]:
     """Checks the urls and fetches YouTube info for all of them in one go; nothing is saved here.
 
-    Links already added to the object, or repeated in the list, are saved once. Errors are keyed by the link's
-    position in the list, so the frontend knows which link is wrong.
+    Links already added to the object, or repeated in the list, are saved once. `stored_urls` are rows of a shared link
+    table: they already passed these checks and keep their info, so YouTube isn't asked again. Errors are keyed by the
+    link's position in the list, so the frontend knows which link is wrong.
     """
     errors: dict[int, str] = {}  # position -> message
     video_ids: dict[int, str] = {}  # position -> YouTube video id
@@ -31,7 +32,7 @@ def prepare_links(urls: list[str], existing_urls=()) -> list[dict]:
 
     for index in kept:
         url = urls[index]
-        if is_youtube(url):
+        if url not in stored_urls and is_youtube(url):
             video_id = extract_video_id(url)
             if video_id:
                 video_ids[index] = video_id
@@ -77,11 +78,39 @@ def position_errors(errors: dict[int, str]) -> serializers.ValidationError:
     )
 
 
+def is_shared(links) -> bool:
+    """Whether an object's `links` manager is many-to-many, so one link row can belong to several objects."""
+    return hasattr(links, "through")
+
+
+def stored_urls(model, urls: list[str]) -> set[str]:
+    return set(model.objects.filter(url__in=urls).values_list("url", flat=True))
+
+
 def save_links(owner, prepared_links: list[dict]):
     links = owner.links
-    return links.model.objects.bulk_create(
-        [links.model(**{links.field.name: owner}, **data) for data in prepared_links]
+    if not is_shared(links):
+        return links.model.objects.bulk_create(
+            [links.model(**{links.field.name: owner}, **data) for data in prepared_links]
+        )
+    # Rows that already exist keep their info; ignoring conflicts also covers two admins adding one url at once
+    links.model.objects.bulk_create(
+        [links.model(**data) for data in prepared_links],
+        ignore_conflicts=True,
     )
+    urls = [data["url"] for data in prepared_links]
+    by_url = links.model.objects.in_bulk(urls, field_name="url")
+    saved = [by_url[url] for url in urls]
+    links.add(*saved)
+    return saved
+
+
+def remove_link(owner, link) -> None:
+    """A shared link may serve other objects and stays reusable, so only this object's relation goes."""
+    if is_shared(owner.links):
+        owner.links.remove(link)
+    else:
+        link.delete()
 
 
 def link_models():
@@ -89,9 +118,15 @@ def link_models():
     return [model for model in apps.get_models() if issubclass(model, BaseLink)]
 
 
-def owner_field(model):
-    """The link's foreign key to the object it belongs to; `BaseLink` has no other."""
-    return next(field for field in model._meta.fields if field.is_relation)
+def link_owners(link) -> list[tuple[str, int]]:
+    """The (model name, id) of every object using this link; a shared link not attached to anything has none."""
+    model = type(link)
+    field = next((field for field in model._meta.fields if field.is_relation), None)
+    if field:
+        return [(field.related_model._meta.model_name, getattr(link, field.attname))]
+    relation = next(rel for rel in model._meta.related_objects if rel.many_to_many)
+    owner_ids = getattr(link, relation.get_accessor_name()).order_by("pk").values_list("pk", flat=True)
+    return [(relation.related_model._meta.model_name, owner_id) for owner_id in owner_ids]
 
 
 def fill_missing_info(links) -> tuple[int, list]:

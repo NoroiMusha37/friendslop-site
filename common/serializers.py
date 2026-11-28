@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from accounts.models import User
-from common.links import prepare_links
+from common.links import is_shared, prepare_links, stored_urls
 from common.models import REVIEW_TEXT_MAX_LENGTH
 
 
@@ -40,8 +40,13 @@ class AddLinksSerializer(serializers.Serializer):
     )
 
     def validate_links(self, urls):
-        existing = set(self.context["owner"].links.values_list("url", flat=True))
-        return prepare_links(urls, existing)
+        links = self.context["owner"].links
+        existing = set(links.values_list("url", flat=True))
+        return prepare_links(
+            urls,
+            existing,
+            stored_urls(links.model, urls) if is_shared(links) else (),
+        )
 
 
 class RatingsMixin(serializers.Serializer):

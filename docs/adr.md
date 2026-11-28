@@ -171,7 +171,8 @@
 - ExerciseExerciseLink: many-to-many relation between exercises and links
 - YouTube info follows the Common link rules and is stored on ExerciseLink, so it is fetched once per URL
 - detaching a link from an exercise removes only the relation; the ExerciseLink row stays and can be reused
-- `POST /links/refresh/` lists a removed video once per exercise using it, each entry with one `url` and one `object_id`
+- `POST /links/refresh/` lists a removed video once per exercise using it, each entry with one `url` and one `object_id`;
+  a link attached to no exercise is left out, since there is no page to point to
 
 ### Training Plan
 
@@ -188,6 +189,29 @@
 - plans are kept for future dashboards, analysis and randomizer recommendations: there is no delete endpoint and
   nothing deletes them automatically
 - workout sessions are not stored
+
+### Training API
+
+- admins write; any logged-in user reads exercises and plans. Changing anything archived gives 409
+- `POST /exercises/`: name, description, muscle categories (at least one), load category, intensity, optional list of
+  links. Names are unique ignoring case, archived exercises included; a duplicate gives 400 on `name`
+- `PATCH /exercises/{id}/` edits the same fields except links. No PUT or DELETE
+- exercise list: id, name, muscle categories, load category, intensity, archived_at, ratings per admin, combined rating.
+  Newest first; only active exercises unless an admin sends `?archived=true` (a regular user gets 403). Filters
+  `?muscle=`, `?load=`, `?intensity=`, `?search=` (name), `?ordering=combined_rating` or `rating:<admin username>`.
+  Detail adds description, links and reviews, and also opens archived exercises
+- `POST /exercises/{id}/archive/` and `/restore/` return the exercise; 409 if it is already in that state
+- links and reviews use the Common endpoints
+- `GET /exercises/random/` (admins): see Randomizers
+- `POST /plans/`: name (up to 200 characters), `mode`, `exercises` (ordered ids, at least one; an exercise may repeat),
+  optional `source_plan`. The frontend sends `mode`: a copy of a RANDOM or RANDOM_EDIT plan must be RANDOM_EDIT, a copy
+  of a MANUAL plan must be MANUAL, otherwise 400 on `mode`
+- saving with an archived exercise, or from a source plan containing one (even if the copy drops it), gives 409
+- `GET /plans/` shows latest versions (plans nothing was copied from), newest first. `?history=true` shows every version;
+  `?favourite=true` shows the logged-in admin's favourites, including ones edited since. `GET /plans/{id}/` opens any
+  version. No PATCH, PUT or DELETE
+- `PUT` and `DELETE /plans/{id}/favourite/` (admins) set or clear the admin's own favourite; both give 204 and can be
+  repeated
 
 ## Randomizers
 
@@ -215,6 +239,11 @@
   either mine or the same for both admins
 - training plan randomizer. Pre-fills a new plan in the editor with a given number of exercises chosen by
   MUSCLE_CATEGORY, LOAD_CATEGORY, INTENSITY; saving works like a regular plan
+    - `GET /exercises/random/`, admins only, nothing saved. `count` 1-20 (default 5), `muscle=CHEST,BACK` and
+      `load=LIGHT,MEDIUM` (any listed value matches), `intensity_min`, `intensity_max`; all optional. Returns
+      `{"exercises": [...]}` in the list shape
+    - active exercises only, each at most once; fewer than `count` when too few match, an empty list when none do
+    - invalid values give 400
 
 ## Logging
 

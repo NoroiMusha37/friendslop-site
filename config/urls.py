@@ -25,6 +25,7 @@ api_v1 = [
     path("", include("accounts.urls")),
     path("", include("recipes.urls")),
     path("", include("games.urls")),
+    path("", include("exercises.urls")),
     path("", include("common.urls")),
 ]
 

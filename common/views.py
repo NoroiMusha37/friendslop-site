@@ -7,11 +7,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import IsAdmin
-from common.links import fill_missing_info, link_models, owner_field, save_links
+from common.links import fill_missing_info, link_models, link_owners, remove_link, save_links
 from common.serializers import AddLinksSerializer, LinkSerializer, ReviewSerializer
 
 
-class LinksMixin:
+class WritableOwnerMixin:
+    """Lets a viewset refuse link and review changes on some objects by raising from `check_owner_writable`."""
+
+    def check_owner_writable(self, owner) -> None:
+        pass
+
+
+class LinksMixin(WritableOwnerMixin):
     """Adds `POST .../{id}/links/` (several at once), `POST .../{id}/links/refresh/` and
     `DELETE .../{id}/links/{link_id}/` to a viewset whose objects have `links`. Permissions come from the viewset."""
 
@@ -26,6 +33,7 @@ class LinksMixin:
     )
     def add_links(self, request, pk=None):
         owner = self.get_object()
+        self.check_owner_writable(owner)
         serializer = AddLinksSerializer(data=request.data, context={"owner": owner})
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
@@ -69,11 +77,13 @@ class LinksMixin:
         url_path=r"links/(?P<link_id>\d+)",
     )
     def delete_link(self, request, pk=None, link_id=None):
-        get_object_or_404(self.get_object().links, pk=link_id).delete()
+        owner = self.get_object()
+        self.check_owner_writable(owner)
+        remove_link(owner, get_object_or_404(owner.links, pk=link_id))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ReviewsMixin:
+class ReviewsMixin(WritableOwnerMixin):
     """Adds `POST`, `PATCH` and `DELETE .../{id}/review/` to a viewset whose objects have `reviews`. Each request
     acts on the logged-in admin's own review, so nobody can touch another admin's. Permissions come from the viewset."""
 
@@ -88,6 +98,7 @@ class ReviewsMixin:
     )
     def review(self, request, pk=None):
         owner = self.get_object()
+        self.check_owner_writable(owner)
         serializer = ReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
@@ -109,7 +120,9 @@ class ReviewsMixin:
     )
     @review.mapping.patch
     def update_review(self, request, pk=None):
-        review = get_object_or_404(self.get_object().reviews, author=request.user)
+        owner = self.get_object()
+        self.check_owner_writable(owner)
+        review = get_object_or_404(owner.reviews, author=request.user)
         serializer = ReviewSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         for field, value in serializer.validated_data.items():
@@ -120,7 +133,9 @@ class ReviewsMixin:
     @extend_schema(request=None, responses={204: None})
     @review.mapping.delete
     def delete_review(self, request, pk=None):
-        get_object_or_404(self.get_object().reviews, author=request.user).delete()
+        owner = self.get_object()
+        self.check_owner_writable(owner)
+        get_object_or_404(owner.reviews, author=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -150,14 +165,16 @@ class RefreshLinksView(APIView):
     def post(self, request):
         links = [link for model in link_models() for link in model.objects.filter(title="")]
         filled, not_found = fill_missing_info(links)
-        return Response({"filled": filled, "not_found": [gone_link(link) for link in not_found]})
+        return Response({"filled": filled, "not_found": [entry for link in not_found for entry in gone_link(link)]})
 
 
-def gone_link(link) -> dict:
-    """Where a link with a removed video lives, so the frontend can point the admin to the right page."""
-    field = owner_field(type(link))
-    return {
-        "url": link.url,
-        "type": field.related_model._meta.model_name,
-        "object_id": getattr(link, field.attname),
-    }
+def gone_link(link) -> list[dict]:
+    """One entry per object using a link with a removed video, so the frontend can point the admin to each page."""
+    return [
+        {
+            "url": link.url,
+            "type": owner_type,
+            "object_id": object_id,
+        }
+        for owner_type, object_id in link_owners(link)
+    ]

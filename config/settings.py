@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "common",
     "recipes",
     "games",
+    "exercises",
 ]
 
 MIDDLEWARE = [

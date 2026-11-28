@@ -17,7 +17,8 @@ Code shared by recipes, games and exercises: links with YouTube info, admin revi
 ## Local Contracts
 
 - Everything here works with any model whose objects have `links` / `reviews`; never write app-specific code here
-- Mixins take their permissions from the viewset that uses them
+- Mixins take their permissions from the viewset that uses them; a viewset can refuse link and review writes by overriding `check_owner_writable`
+- `links` can be a reverse foreign key (one owner, removing deletes the row) or many-to-many (shared rows, one per url; removing drops only the relation)
 - YouTube info for all links of a request is fetched in one call. YouTube down: links saved without info, filled in later by the refresh endpoints. Invalid API key: 503, nothing saved
 - Tests never call YouTube: they use the root `youtube` fixture (`responses`)
 
@@ -25,7 +26,7 @@ Code shared by recipes, games and exercises: links with YouTube info, admin revi
 
 ## Verification
 
-- `docker compose run --rm web pytest common recipes` (the mixins are exercised through the recipe endpoints)
+- `docker compose run --rm web pytest common recipes exercises` (the mixins are exercised through the recipe and exercise endpoints)
 
 ## Child DOX Index
 
